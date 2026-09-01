@@ -12,11 +12,12 @@ import type {
   DB,
   Gestion,
   GestionInput,
+  PadrinoInfo,
   Persona,
   PersonaInput,
   Usuario,
 } from './types'
-import { generarEstado, LS_KEY, USUARIOS, esValido, getPersona } from './data'
+import { generarEstado, LS_KEY, esValido, getPersona } from './data'
 import { hoyISO, uid } from './lib'
 
 export type ViewId =
@@ -30,10 +31,10 @@ export type ViewId =
   | 'talento'
   | 'legal'
   | 'perfil'
-  | 'lider-dash'
-  | 'captura'
-  | 'lider-simpatizantes'
-  | 'lider-gestiones'
+  | 'padrino-dash'
+  | 'padrino-planillas'
+  | 'padrino-simpatizantes'
+  | 'padrinos'
 
 export type ToastType = 'success' | 'info' | 'error' | 'warn'
 
@@ -83,8 +84,19 @@ interface AppContextValue {
   directorioPreset: DirectorioPreset | null
   irADirectorio: (preset: DirectorioPreset) => void
   clearDirectorioPreset: () => void
+  comunicacionesPreset: { cumpleanos?: boolean } | null
+  irAComunicaciones: (preset: { cumpleanos?: boolean }) => void
+  clearComunicacionesPreset: () => void
+  gestionesPreset: { estado?: string; conMonto?: string } | null
+  irAGestiones: (preset: { estado?: string; conMonto?: string }) => void
+  clearGestionesPreset: () => void
   registrarVoto: (id: string) => void
   simularAvance: () => void
+  asignarPadrino: (liderId: string, padrinoId: string) => void
+  quitarRolPadrino: (padrinoId: string) => void
+  promoverPadrino: (personaId: string) => void
+  nuevoPadrino: (nombre: string, cedula: string, sector: string) => void
+  cambiarPassword: (userId: string, nuevaPass: string) => void
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
@@ -92,11 +104,28 @@ const AppContext = createContext<AppContextValue | null>(null)
 function loadDB(): DB {
   try {
     const raw = localStorage.getItem(LS_KEY)
-    if (raw) return JSON.parse(raw) as DB
+    if (raw) {
+      const parsed = JSON.parse(raw) as DB
+      if (
+        parsed &&
+        Array.isArray(parsed.personas) &&
+        Array.isArray(parsed.planillas) &&
+        parsed.padrinoLider &&
+        Array.isArray(parsed.padrinos) &&
+        Array.isArray(parsed.usuarios)
+      ) {
+        return parsed
+      }
+    }
   } catch {
     /* ignore */
   }
   return generarEstado()
+}
+
+function usuarioPadrino(padrinoId: string, nombre: string): Usuario {
+  const id = uid('pad')
+  return { id, nombre, email: `${id}@campana.com`, pass: 'padrino123', rol: 'padrino', padrinoId }
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -110,6 +139,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const toastTimer = useRef<number | null>(null)
   const [liderFilter, setLiderFilter] = useState<string>('all')
   const [directorioPreset, setDirectorioPreset] = useState<DirectorioPreset | null>(null)
+  const [comunicacionesPreset, setComunicacionesPreset] = useState<{ cumpleanos?: boolean } | null>(null)
+  const [gestionesPreset, setGestionesPreset] = useState<{ estado?: string; conMonto?: string } | null>(null)
 
   useEffect(() => {
     try {
@@ -126,11 +157,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   const login = (userId: string) => {
-    const u = USUARIOS.find((x) => x.id === userId)
+    const u = db.usuarios.find((x) => x.id === userId)
     if (!u) return
     setSession(u)
     setPerfilId(null)
-    setView(u.rol === 'admin' ? 'dashboard' : 'lider-dash')
+    setView(u.rol === 'admin' ? 'dashboard' : u.rol === 'padrino' ? 'padrino-dash' : 'comunicaciones')
     notify(`Bienvenido, ${u.nombre}`, 'success')
   }
 
@@ -154,6 +185,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const clearDirectorioPreset = () => setDirectorioPreset(null)
 
+  const irAComunicaciones = (preset: { cumpleanos?: boolean }) => {
+    setComunicacionesPreset(preset)
+    setPerfilId(null)
+    setView('comunicaciones')
+  }
+
+  const clearComunicacionesPreset = () => setComunicacionesPreset(null)
+
+  const irAGestiones = (preset: { estado?: string; conMonto?: string }) => {
+    setGestionesPreset(preset)
+    setPerfilId(null)
+    setView('gestiones')
+  }
+
+  const clearGestionesPreset = () => setGestionesPreset(null)
+
   const registrarVoto = (id: string) => {
     const p = db.personas.find((x) => x.id === id)
     if (!p) return
@@ -168,7 +215,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ),
       actividadDiaE: [
         ...prev.actividadDiaE,
-        { id: uid('A'), hora: prev.horaDiaE, liderId: p.liderId, tipo: 'Voto', detalle: `Registró el voto de ${p.nombres} ${p.apellidos}` },
+        { id: uid('A'), hora: prev.horaDiaE, liderId: p.liderId ?? '', tipo: 'Voto', detalle: `Registró el voto de ${p.nombres} ${p.apellidos}` },
       ],
     }))
     notify('Voto registrado ✅', 'success')
@@ -192,7 +239,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       )
       const porLider: Record<string, number> = {}
       elegidos.forEach((p) => {
-        porLider[p.liderId] = (porLider[p.liderId] || 0) + 1
+        const lid = p.liderId ?? ''
+        porLider[lid] = (porLider[lid] || 0) + 1
       })
       const nuevasActividades = Object.entries(porLider).map(([lid, cant]) => ({
         id: uid('A'),
@@ -219,6 +267,60 @@ export function AppProvider({ children }: { children: ReactNode }) {
     notify('Avance del día simulado ⏩', 'info')
   }
 
+  const asignarPadrino = (liderId: string, padrinoId: string) => {
+    setDb((prev) => ({ ...prev, padrinoLider: { ...prev.padrinoLider, [liderId]: padrinoId } }))
+    notify('Padrino asignado', 'success')
+  }
+
+  const quitarRolPadrino = (padrinoId: string) => {
+    setDb((prev) => {
+      const padrinoLider = { ...prev.padrinoLider }
+      Object.keys(padrinoLider).forEach((lid) => {
+        if (padrinoLider[lid] === padrinoId) padrinoLider[lid] = ''
+      })
+      return {
+        ...prev,
+        padrinoLider,
+        padrinos: prev.padrinos.map((p) => (p.id === padrinoId ? { ...p, activo: false } : p)),
+      }
+    })
+    notify('Rol de padrino retirado', 'info')
+  }
+
+  const promoverPadrino = (personaId: string) => {
+    const p = db.personas.find((x) => x.id === personaId)
+    if (!p) return
+    const padrinoId = uid('PAD')
+    const nombre = `${p.nombres} ${p.apellidos}`
+    const u = usuarioPadrino(padrinoId, nombre)
+    setDb((prev) => ({
+      ...prev,
+      personas: prev.personas.map((x) => (x.id === personaId ? { ...x, esPadrino: true } : x)),
+      padrinos: [...prev.padrinos, { id: padrinoId, nombre, cedula: p.cedula, sector: '', activo: true, personaId: p.id, userId: u.id }],
+      usuarios: [...prev.usuarios, u],
+    }))
+    notify(`Padrino promovido · ${u.email} / padrino123`, 'success')
+  }
+
+  const nuevoPadrino = (nombre: string, cedula: string, sector: string) => {
+    const padrinoId = uid('PAD')
+    const u = usuarioPadrino(padrinoId, nombre)
+    setDb((prev) => ({
+      ...prev,
+      padrinos: [...prev.padrinos, { id: padrinoId, nombre, cedula, sector, activo: true, userId: u.id }],
+      usuarios: [...prev.usuarios, u],
+    }))
+    notify(`Padrino agregado · ${u.email} / padrino123`, 'success')
+  }
+
+  const cambiarPassword = (userId: string, nuevaPass: string) => {
+    setDb((prev) => ({
+      ...prev,
+      usuarios: prev.usuarios.map((u) => (u.id === userId ? { ...u, pass: nuevaPass } : u)),
+    }))
+    notify('Contraseña actualizada', 'success')
+  }
+
   const verPerfil = (id: string) => {
     setPerfilId(id)
     setView('perfil')
@@ -226,7 +328,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const volver = () => {
     setPerfilId(null)
-    setView(session?.rol === 'admin' ? 'dashboard' : 'lider-dash')
+    setView(session?.rol === 'admin' ? 'dashboard' : session?.rol === 'padrino' ? 'padrino-dash' : 'comunicaciones')
   }
 
   const openPersona = (m: PersonaModalState) => setPersonaModal(m)
@@ -392,11 +494,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
       directorioPreset,
       irADirectorio,
       clearDirectorioPreset,
+      comunicacionesPreset,
+      irAComunicaciones,
+      clearComunicacionesPreset,
+      gestionesPreset,
+      irAGestiones,
+      clearGestionesPreset,
       registrarVoto,
       simularAvance,
+      asignarPadrino,
+      quitarRolPadrino,
+      promoverPadrino,
+      nuevoPadrino,
+      cambiarPassword,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [db, session, view, perfilId, personaModal, gestionModal, toast, liderFilter, directorioPreset],
+    [db, session, view, perfilId, personaModal, gestionModal, toast, liderFilter, directorioPreset, comunicacionesPreset, gestionesPreset],
   )
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

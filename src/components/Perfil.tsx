@@ -38,7 +38,7 @@ export default function Perfil() {
   const balance = balanceDe(db, p.id)
   const puesto = buscarPuesto(p.puesto)
   const cum = diasParaCumple(p.fechaNacimiento)
-  const puedeEditar = session?.rol === 'admin' || session?.liderId === p.liderId
+  const puedeEditar = session?.rol === 'admin' || session?.rol === 'padrino'
   const vb = VALIDEZ_BADGE[validezDe(p)]
   const disp = vehiculosDisponibles(p)
 
@@ -89,7 +89,7 @@ export default function Perfil() {
                     <Pencil className="w-3.5 h-3.5" /> Editar
                   </button>
                 )}
-                {!p.votoRegistrado && (session?.rol === 'admin' || session?.liderId === p.liderId) && (
+                {!p.votoRegistrado && (session?.rol === 'admin' || session?.rol === 'padrino') && (
                   <button
                     onClick={() => registrarVoto(p.id)}
                     className="inline-flex items-center gap-1.5 text-xs bg-emerald-600 text-white rounded-lg px-3 py-2 font-semibold hover:bg-emerald-700"
@@ -194,6 +194,7 @@ export default function Perfil() {
           <Card title="4 · Vinculación y compromiso">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 text-sm">
               <Ficha label="Líder asignado" value={nombreLider(p.liderId)} />
+              <Ficha label="Planilla" value={p.planillaCodigo ?? 'Directa (sin planilla)'} />
               <Ficha label="Nivel de voto" value={p.nivelVoto} />
               <Ficha label="Rol Día E" value={p.rolDiaE} />
             </div>

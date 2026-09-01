@@ -1,30 +1,29 @@
 import { useState } from 'react'
 import { Lock, ShieldCheck, UserRound } from 'lucide-react'
 import { useApp } from '../store'
-import { LIDERES_INFO, USUARIOS } from '../data'
 import type { Usuario } from '../types'
 
 function labelDe(u: Usuario): string {
   if (u.rol === 'admin') return 'Director de Campaña — Administrador (acceso total)'
-  const l = LIDERES_INFO.find((x) => x.id === u.liderId)
-  return `${u.nombre} — Líder · ${l?.territorio ?? ''}`
+  if (u.rol === 'subadmin') return `${u.nombre} — Subadministrador (conectividad)`
+  return `${u.nombre} — Padrino`
 }
 
 export default function Login() {
-  const { login, notify } = useApp()
+  const { db, login, notify } = useApp()
   const [userId, setUserId] = useState('admin')
   const [pass, setPass] = useState('admin123')
   const [error, setError] = useState(false)
 
   const onSelect = (id: string) => {
     setUserId(id)
-    const u = USUARIOS.find((x) => x.id === id)
+    const u = db.usuarios.find((x) => x.id === id)
     setPass(u?.pass ?? '')
     setError(false)
   }
 
   const submit = () => {
-    const u = USUARIOS.find((x) => x.id === userId && x.pass === pass)
+    const u = db.usuarios.find((x) => x.id === userId && x.pass === pass)
     if (!u) {
       setError(true)
       notify('Credenciales inválidas', 'error')
@@ -62,7 +61,7 @@ export default function Login() {
                 onChange={(e) => onSelect(e.target.value)}
                 className="w-full mt-1 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               >
-                {USUARIOS.map((u) => (
+                {db.usuarios.map((u) => (
                   <option key={u.id} value={u.id}>
                     {labelDe(u)}
                   </option>
@@ -87,7 +86,8 @@ export default function Login() {
           </form>
           <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-400 text-center">
             Accesos: <span className="font-mono">admin@campana.com / admin123</span> ·{' '}
-            <span className="font-mono">lider1..6@campana.com / lider123</span>
+            <span className="font-mono">conectividad@campana.com / subadmin123</span> ·{' '}
+            <span className="font-mono">padrino1..3@campana.com / padrino123</span>
           </div>
         </div>
       </div>

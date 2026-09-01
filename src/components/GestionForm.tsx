@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '../store'
-import { CATEGORIAS, nombreLider } from '../data'
+import { CATEGORIAS, lideresDePadrino, nombreLider } from '../data'
 import type { CategoriaGestion, EstadoGestion, GestionInput } from '../types'
 import { Field, Modal, inputCls } from './ui'
 import { hoyISO } from '../lib'
@@ -27,13 +27,14 @@ export default function GestionForm() {
     responsable: session?.nombre ?? '',
   })
 
-  const personas = useMemo(
-    () =>
-      session?.rol === 'admin'
-        ? db.personas
-        : db.personas.filter((p) => p.liderId === session?.liderId),
-    [db, session],
-  )
+  const personas = useMemo(() => {
+    if (session?.rol === 'admin') return db.personas
+    if (session?.rol === 'padrino') {
+      const ids = new Set(lideresDePadrino(db, session.padrinoId ?? '').map((l) => l.id))
+      return db.personas.filter((p) => p.liderId && ids.has(p.liderId))
+    }
+    return db.personas
+  }, [db, session])
 
   useEffect(() => {
     if (!gestionModal) return
@@ -41,7 +42,7 @@ export default function GestionForm() {
       const g = db.gestiones.find((x) => x.id === gestionModal.gestionId)
       if (g) {
         setForm({
-          personaId: g.personaId,
+          personaId: g.personaId ?? '',
           fecha: g.fecha,
           categoria: g.categoria,
           descripcion: g.descripcion,
@@ -67,7 +68,7 @@ export default function GestionForm() {
   const patch = (partial: Partial<FormState>) => setForm((f) => ({ ...f, ...partial }))
 
   const save = () => {
-    if (!form.personaId || !form.fecha || !form.descripcion.trim() || !form.responsable.trim()) {
+    if (!form.fecha || !form.descripcion.trim() || !form.responsable.trim()) {
       notify('Completa todos los campos obligatorios', 'error')
       return
     }
@@ -102,8 +103,9 @@ export default function GestionForm() {
       }
     >
       <div className="space-y-3">
-        <Field label="Persona (SIMPATIZANTE / LÍDER)" required>
+        <Field label="Persona (SIMPATIZANTE / LÍDER)">
           <select className={inputCls} value={form.personaId} onChange={(e) => patch({ personaId: e.target.value })}>
+            <option value="">— Sin simpatizante (gestión general) —</option>
             {personas.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.nombres} {p.apellidos} {p.esLider ? '(Líder)' : ''} — {nombreLider(p.liderId)}

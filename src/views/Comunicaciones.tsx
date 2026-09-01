@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Filter, Search, Send, X } from 'lucide-react'
 import { useApp } from '../store'
 import {
@@ -51,10 +51,11 @@ const DEFAULT_FILTROS: FiltrosEnvio = {
   categoria: 'all',
   estado: 'all',
   conGestiones: 'all',
+  cumpleanos: false,
 }
 
 export default function Comunicaciones() {
-  const { db, enviarComunicacion, notify } = useApp()
+  const { db, enviarComunicacion, notify, comunicacionesPreset, clearComunicacionesPreset } = useApp()
   const [tab, setTab] = useState<'segmento' | 'individual' | 'historial'>('segmento')
   const [filtros, setFiltros] = useState<FiltrosEnvio>(DEFAULT_FILTROS)
   const [showFiltros, setShowFiltros] = useState(false)
@@ -62,6 +63,15 @@ export default function Comunicaciones() {
   const [mensaje, setMensaje] = useState('')
   const [personaId, setPersonaId] = useState('')
   const [busqueda, setBusqueda] = useState('')
+
+  useEffect(() => {
+    if (comunicacionesPreset?.cumpleanos) {
+      setFiltros((f) => ({ ...f, cumpleanos: true }))
+      setTab('segmento')
+      clearComunicacionesPreset()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [comunicacionesPreset])
 
   const segmento = useMemo(() => destinatariosFiltrados(db, filtros), [db, filtros])
   const personaSel = personaId ? getPersona(db, personaId) : undefined
@@ -104,13 +114,17 @@ export default function Comunicaciones() {
       comuna: 'Comuna', corregimiento: 'Corregimiento', barrio: 'Barrio', puesto: 'Puesto',
       interes: 'Interés', grupoSocial: 'Grupo social', ocupacion: 'Ocupación', profesion: 'Profesión',
       nivelAcademico: 'Nivel académico', posgrado: 'Posgrado', nivelVoto: 'Nivel de voto', rolDiaE: 'Rol Día E',
-      validez: 'Validez', categoria: 'Gestión', estado: 'Estado', tieneVehiculo: 'Vehículo', conGestiones: 'Gestiones',
+      validez: 'Validez', categoria: 'Gestión', estado: 'Estado', tieneVehiculo: 'Vehículo', conGestiones: 'Gestiones', cumpleanos: 'Cumpleañeros',
     }
     const VAL_LABEL: Record<string, string> = { valido: 'Válidos', invalido: 'Inválidos', fuera_municipio: 'Fuera de municipio', fuera_departamento: 'Fuera de departamento' }
     const c: { key: string; label: string; value: string }[] = []
     Object.entries(filtros).forEach(([k, v]) => {
       if (k === 'tieneVehiculo') {
         if (v === true) c.push({ key: k, label: LABELS[k], value: 'Disponible' })
+        return
+      }
+      if (k === 'cumpleanos') {
+        if (v === true) c.push({ key: k, label: LABELS[k], value: 'Sí' })
         return
       }
       if (v === 'all' || v === '') return
@@ -127,7 +141,7 @@ export default function Comunicaciones() {
 
   const removeChip = (key: string) => {
     setFiltros((f) => {
-      if (key === 'tieneVehiculo') return { ...f, [key]: false } as FiltrosEnvio
+      if (key === 'tieneVehiculo' || key === 'cumpleanos') return { ...f, [key]: false } as FiltrosEnvio
       return { ...f, [key]: 'all' } as FiltrosEnvio
     })
   }
@@ -540,6 +554,10 @@ export default function Comunicaciones() {
               <label className="inline-flex items-center gap-2 text-sm text-slate-700 col-span-2">
                 <input type="checkbox" checked={filtros.tieneVehiculo} onChange={(e) => patch({ tieneVehiculo: e.target.checked })} className="accent-blue-600" />
                 Tiene vehículo a disposición
+              </label>
+              <label className="inline-flex items-center gap-2 text-sm text-slate-700 col-span-2">
+                <input type="checkbox" checked={filtros.cumpleanos} onChange={(e) => patch({ cumpleanos: e.target.checked })} className="accent-pink-600" />
+                Solo cumpleañeros próximos (7 días)
               </label>
             </div>
           </Modal>

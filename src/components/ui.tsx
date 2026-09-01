@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
-import { X } from 'lucide-react'
+import { useRef, type ReactNode } from 'react'
+import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { EstadoGestion, NivelAcademico, NivelVoto, TipoVehiculo, Validez } from '../types'
 import { useApp } from '../store'
@@ -20,19 +20,61 @@ export function Kpi({
   label,
   value,
   accent = 'text-slate-800',
+  onClick,
 }: {
   icon: LucideIcon
   label: string
   value: string | number
   accent?: string
+  onClick?: () => void
 }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4">
+    <div
+      onClick={onClick}
+      className={`bg-white rounded-xl border border-slate-200 p-4 ${onClick ? 'cursor-pointer hover:border-pink-300 hover:shadow-sm transition' : ''}`}
+    >
       <div className="flex items-center justify-between">
         <div className={`text-2xl font-extrabold ${accent}`}>{value}</div>
         <Icon className="w-5 h-5 text-slate-400" />
       </div>
       <div className="text-[11px] text-slate-500 font-medium mt-1">{label}</div>
+    </div>
+  )
+}
+
+export function BarsScroll({ data }: { data: { label: string; value: number; color: string }[] }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const max = Math.max(...data.map((d) => d.value), 1)
+  const scroll = (dir: number) => ref.current?.scrollBy({ left: dir * 320, behavior: 'smooth' })
+  return (
+    <div>
+      <div className="relative">
+        <button
+          onClick={() => scroll(-1)}
+          aria-label="Desplazar a la izquierda"
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white border border-slate-200 shadow-md text-slate-500 hover:text-blue-600 hover:border-blue-300 flex items-center justify-center transition"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <div ref={ref} className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex items-end gap-4 h-56 min-w-max px-12">
+            {data.map((d) => (
+              <div key={d.label} className="w-16 shrink-0 flex flex-col items-center justify-end gap-1 h-full">
+                <div className="text-xs font-semibold text-slate-600">{d.value}</div>
+                <div className="w-full max-w-[40px] rounded-t-md" style={{ height: `${Math.max(2, (d.value / max) * 140)}px`, backgroundColor: d.color }} />
+                <div className="text-[10px] text-slate-600 truncate w-full text-center leading-tight">{d.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <button
+          onClick={() => scroll(1)}
+          aria-label="Desplazar a la derecha"
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white border border-slate-200 shadow-md text-slate-500 hover:text-blue-600 hover:border-blue-300 flex items-center justify-center transition"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
     </div>
   )
 }

@@ -3,24 +3,25 @@ import {
   Car,
   ChevronsLeft,
   ChevronsRight,
-  Gauge,
+  ClipboardList,
   GraduationCap,
   Handshake,
+  KeyRound,
   LayoutDashboard,
   LogOut,
   Menu,
-  PlusCircle,
   RotateCcw,
   Send,
   ShieldCheck,
   Trophy,
+  UserCog,
   Users,
   X,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useApp, type ViewId } from '../store'
 import type { UserRole } from '../types'
-import { territorioDeLider } from '../data'
+import { nombrePadrino } from '../data'
 import { Badge } from './ui'
 import Dashboard from '../views/Dashboard'
 import Lideres from '../views/Lideres'
@@ -32,10 +33,11 @@ import Directorio from '../views/Directorio'
 import Talento from '../views/Talento'
 import Legal from '../views/Legal'
 import Perfil from './Perfil'
-import LiderDash from '../views/LiderDash'
-import Captura from '../views/Captura'
-import LiderSimpatizantes from '../views/LiderSimpatizantes'
-import LiderGestiones from '../views/LiderGestiones'
+import CambiarPass from './CambiarPass'
+import PadrinoDash from '../views/PadrinoDash'
+import PadrinoPlanillas from '../views/PadrinoPlanillas'
+import PadrinoSimpatizantes from '../views/PadrinoSimpatizantes'
+import PadrinosAdmin from '../views/PadrinosAdmin'
 
 interface NavItem {
   id: ViewId
@@ -48,17 +50,21 @@ const NAV: Record<UserRole, NavItem[]> = {
   admin: [
     { id: 'dashboard', label: 'Dashboard Analítico', sub: 'Métricas globales y legal', icon: LayoutDashboard },
     { id: 'directorio', label: 'Directorio de Simpatizantes', sub: 'Fichas técnicas', icon: Users },
-    { id: 'talento', label: 'Mapa de Talento', sub: 'Profesionales para comités', icon: GraduationCap },
     { id: 'lideres', label: 'Red de Líderes y Metas', sub: 'Meta vs votos válidos', icon: Trophy },
+    { id: 'padrinos', label: 'Padrinos', sub: 'Asignación y mesa de datos', icon: UserCog },
     { id: 'gestiones', label: 'Trazabilidad de Gestiones', sub: 'Favores, compromisos y balance', icon: Handshake },
     { id: 'comunicaciones', label: 'Comunicaciones Omnicanal', sub: 'Envíos masivos segmentados', icon: Send },
     { id: 'logistica', label: 'Centro de Mando — Día E', sub: 'Votos, líderes, transporte y censo', icon: Car },
+    { id: 'talento', label: 'Mapa de Talento', sub: 'Profesionales para comités', icon: GraduationCap },
   ],
-  lider: [
-    { id: 'lider-dash', label: 'Mi Progreso', sub: 'Avance vs meta de votos', icon: Gauge },
-    { id: 'captura', label: 'Captura Rápida', sub: 'Registro móvil en campo', icon: PlusCircle },
-    { id: 'lider-simpatizantes', label: 'Mis Simpatizantes', sub: 'Fichas y gestiones', icon: Users },
-    { id: 'lider-gestiones', label: 'Gestiones de mi zona', sub: 'Registrar y trazabilidad', icon: Handshake },
+  subadmin: [
+    { id: 'dashboard', label: 'Dashboard Analítico', sub: 'Métricas globales', icon: LayoutDashboard },
+    { id: 'comunicaciones', label: 'Conectividad y Comunicaciones', sub: 'Canales y envíos masivos', icon: Send },
+  ],
+  padrino: [
+    { id: 'padrino-dash', label: 'Mis Líderes', sub: 'Apadrinamiento y seguimiento', icon: Users },
+    { id: 'padrino-planillas', label: 'Planillas', sub: 'Captura y auditoría', icon: ClipboardList },
+    { id: 'padrino-simpatizantes', label: 'Simpatizantes', sub: 'Gestión sobre mis líderes', icon: Users },
   ],
 }
 
@@ -73,10 +79,10 @@ const TITLES: Record<ViewId, string> = {
   talento: 'Mapa de Talento',
   legal: 'Cumplimiento Legal',
   perfil: 'Ficha Técnica',
-  'lider-dash': 'Mi Progreso',
-  captura: 'Captura Rápida',
-  'lider-simpatizantes': 'Mis Simpatizantes',
-  'lider-gestiones': 'Gestiones de mi zona',
+  'padrino-dash': 'Mis Líderes',
+  'padrino-planillas': 'Planillas',
+  'padrino-simpatizantes': 'Simpatizantes de mis líderes',
+  padrinos: 'Gestión de Padrinos',
 }
 
 function renderView(view: ViewId) {
@@ -101,29 +107,37 @@ function renderView(view: ViewId) {
       return <Legal />
     case 'perfil':
       return <Perfil />
-    case 'lider-dash':
-      return <LiderDash />
-    case 'captura':
-      return <Captura />
-    case 'lider-simpatizantes':
-      return <LiderSimpatizantes />
-    case 'lider-gestiones':
-      return <LiderGestiones />
+    case 'padrino-dash':
+      return <PadrinoDash />
+    case 'padrino-planillas':
+      return <PadrinoPlanillas />
+    case 'padrino-simpatizantes':
+      return <PadrinoSimpatizantes />
+    case 'padrinos':
+      return <PadrinosAdmin />
   }
 }
 
 export default function Layout() {
-  const { session, view, navigate, logout, resetDatos } = useApp()
+  const { db, session, view, navigate, logout, resetDatos } = useApp()
   const [open, setOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
+  const [showPass, setShowPass] = useState(false)
   if (!session) return null
   const items = NAV[session.rol]
 
   const topBadge =
     session.rol === 'admin'
       ? '🌐 Acceso Total'
-      : `📍 ${territorioDeLider(session.liderId ?? '')}`
-  const zoneTone = session.rol === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-indigo-100 text-indigo-700'
+      : session.rol === 'subadmin'
+        ? '🔌 Conectividad y Comunicaciones'
+        : `🛡️ ${nombrePadrino(db, session.padrinoId)}`
+  const zoneTone =
+    session.rol === 'admin'
+      ? 'bg-blue-100 text-blue-700'
+      : session.rol === 'subadmin'
+        ? 'bg-violet-100 text-violet-700'
+        : 'bg-indigo-100 text-indigo-700'
 
   return (
     <div className="min-h-screen">
@@ -204,6 +218,12 @@ export default function Layout() {
           </div>
           <Badge className={`${zoneTone} max-w-[220px] truncate`}>{topBadge}</Badge>
           <button
+            onClick={() => setShowPass(true)}
+            className="inline-flex items-center gap-1.5 text-xs bg-slate-100 hover:bg-slate-200 rounded-lg px-3 py-2 font-medium shrink-0"
+          >
+            <KeyRound className="w-3.5 h-3.5" /> Contraseña
+          </button>
+          <button
             onClick={logout}
             className="inline-flex items-center gap-1.5 text-xs bg-slate-100 hover:bg-slate-200 rounded-lg px-3 py-2 font-medium shrink-0"
           >
@@ -217,6 +237,7 @@ export default function Layout() {
           </div>
         </main>
       </div>
+      <CambiarPass open={showPass} userId={session.id} nombre={session.nombre} onClose={() => setShowPass(false)} />
     </div>
   )
 }

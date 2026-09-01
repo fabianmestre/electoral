@@ -476,7 +476,7 @@ export default function Directorio() {
           <table className="w-full min-w-[1000px] text-left">
             <thead className="bg-slate-50">
               <tr>
-                {['Persona', 'Cédula', 'Departamento', 'Municipio', 'Comuna/Correg.', 'Barrio', 'Perfil', 'Líder', 'Nivel', 'Validez', 'Vehículo'].map((h) => (
+                {['Persona', 'Cédula', 'Departamento', 'Municipio', 'Comuna/Correg.', 'Barrio', 'Perfil', 'Líder', 'Planilla', 'Nivel', 'Validez', 'Vehículo'].map((h) => (
                   <th key={h} className="text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 px-3 py-2.5 border-b border-slate-200 whitespace-nowrap">
                     {h}
                   </th>
@@ -486,7 +486,7 @@ export default function Directorio() {
             <tbody>
               {paginado.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="px-3 py-10 text-slate-400 text-sm text-center">
+                  <td colSpan={12} className="px-3 py-10 text-slate-400 text-sm text-center">
                     Sin resultados para los filtros aplicados.
                   </td>
                 </tr>
@@ -512,6 +512,7 @@ export default function Directorio() {
                     </div>
                   </td>
                   <td className="px-3 py-2.5 text-sm text-slate-600">{nombreLider(p.liderId)}</td>
+                  <td className="px-3 py-2.5 font-mono text-xs text-slate-500">{p.planillaCodigo ?? '—'}</td>
                   <td className="px-3 py-2.5">
                     <Badge className={nivelTone(p.nivelVoto)}>{p.nivelVoto}</Badge>
                   </td>

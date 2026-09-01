@@ -1,4 +1,5 @@
-export type UserRole = 'admin' | 'lider'
+export type UserRole = 'admin' | 'subadmin' | 'padrino'
+export type Permiso = 'conectividad' | 'usuarios' | 'datos' | 'reset'
 export type NivelVoto = 'Firme' | 'Indeciso' | 'En Riesgo'
 export type RolDiaE = 'Votante' | 'Conductor' | 'Testigo electoral'
 export type TipoVehiculo = 'Moto' | 'Automóvil' | 'Camioneta' | 'Bus'
@@ -30,7 +31,8 @@ export interface Usuario {
   email: string
   pass: string
   rol: UserRole
-  liderId?: string
+  padrinoId?: string
+  permisos?: Permiso[]
 }
 
 export interface Puesto {
@@ -58,6 +60,7 @@ export interface LiderInfo {
   errorRate: number
   rolDiaE: RolDiaE
   vehiculos: Vehiculo[]
+  padrinoId?: string
 }
 
 export interface CensoEntry {
@@ -100,7 +103,7 @@ export interface Persona {
   posgrado: Posgrado
   observacion: string
   vehiculos: Vehiculo[]
-  liderId: string
+  liderId?: string
   nivelVoto: NivelVoto
   rolDiaE: RolDiaE
   votoRegistrado: boolean
@@ -108,6 +111,8 @@ export interface Persona {
   habeasData: boolean
   habeasDataFecha: string
   esLider: boolean
+  esPadrino?: boolean
+  planillaCodigo?: string
   userId?: string
   metaVotos?: number
   creadoEn: string
@@ -116,7 +121,7 @@ export interface Persona {
 
 export interface Gestion {
   id: string
-  personaId: string
+  personaId?: string
   fecha: string
   categoria: CategoriaGestion
   descripcion: string
@@ -154,6 +159,30 @@ export interface ActividadDiaE {
   detalle: string
 }
 
+export type EstadoPlanilla = 'entregada' | 'cargada' | 'completa' | 'auditada'
+
+export interface Planilla {
+  id: string
+  codigo: string
+  liderId: string
+  padrinoId: string
+  estado: EstadoPlanilla
+  fechaEntrega: string
+  fechaDigitacion: string
+  registros: number
+  observaciones?: string
+}
+
+export interface PadrinoInfo {
+  id: string
+  nombre: string
+  cedula: string
+  sector: string
+  activo: boolean
+  personaId?: string
+  userId?: string
+}
+
 export interface DB {
   censo: CensoEntry[]
   personas: Persona[]
@@ -161,6 +190,10 @@ export interface DB {
   comunicaciones: Comunicacion[]
   logsHabeas: LogHabeas[]
   actividadDiaE: ActividadDiaE[]
+  planillas: Planilla[]
+  padrinoLider: Record<string, string>
+  padrinos: PadrinoInfo[]
+  usuarios: Usuario[]
   horaDiaE: string
   generado: string
 }
@@ -187,11 +220,12 @@ export interface FiltrosEnvio {
   categoria: string
   estado: string
   conGestiones: string
+  cumpleanos: boolean
 }
 
 export type PersonaInput = Omit<
   Persona,
-  'id' | 'esLider' | 'userId' | 'metaVotos' | 'habeasDataFecha' | 'creadoEn' | 'creadoPor' | 'votoRegistrado' | 'votoHora'
+  'id' | 'esLider' | 'esPadrino' | 'planillaCodigo' | 'userId' | 'metaVotos' | 'habeasDataFecha' | 'creadoEn' | 'creadoPor' | 'votoRegistrado' | 'votoHora'
 >
 
 export type GestionInput = Omit<Gestion, 'id' | 'creadoEn' | 'creadoPor'>

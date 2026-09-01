@@ -15,6 +15,7 @@ import {
   PUESTOS,
   buscarPuesto,
   getPersona,
+  lideresDePadrino,
 } from '../data'
 import type { NivelAcademico, NivelVoto, Persona, PersonaInput, Posgrado, RolDiaE, TipoVehiculo, Vehiculo, ZonaGeografica } from '../types'
 import { Field, Modal, inputCls } from './ui'
@@ -104,7 +105,7 @@ function personaToForm(p: Persona): FormState {
     posgrado: p.posgrado,
     observacion: p.observacion,
     vehiculos: p.vehiculos.map((v) => ({ ...v })),
-    liderId: p.liderId,
+    liderId: p.liderId ?? '',
     nivelVoto: p.nivelVoto,
     rolDiaE: p.rolDiaE,
     habeasData: p.habeasData,
@@ -122,7 +123,7 @@ const puestosDe = (mun: string, barrio: string) => PUESTOS.filter((p) => p.munic
 
 export default function PersonaForm() {
   const { personaModal, closePersona, session, db, savePersona, notify } = useApp()
-  const [form, setForm] = useState<FormState>(() => emptyForm(session?.liderId ?? 'L1'))
+  const [form, setForm] = useState<FormState>(() => emptyForm('L1'))
   const [hint, setHint] = useState<{ tone: 'ok' | 'warn' | 'err'; text: string } | null>(null)
 
   const editing = personaModal?.mode === 'edit' ? getPersona(db, personaModal.personaId ?? '') : undefined
@@ -133,7 +134,7 @@ export default function PersonaForm() {
       const p = getPersona(db, personaModal.personaId ?? '')
       if (p) setForm(personaToForm(p))
     } else {
-      setForm(emptyForm(session?.rol === 'admin' ? 'L1' : (session?.liderId ?? 'L1')))
+      setForm(emptyForm(session?.rol === 'admin' ? 'L1' : (lideresDePadrino(db, session?.padrinoId ?? '')[0]?.id ?? 'L1')))
     }
     setHint(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps

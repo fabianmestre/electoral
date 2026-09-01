@@ -12,7 +12,7 @@ import {
 import { fmtCOP } from '../lib'
 import { Badge, Card, Donut, GroupedBars, Legend, ProgressBar } from '../components/ui'
 
-const PALETA = ['#6366f1', '#10b981', '#f59e0b', '#0ea5e9', '#8b5cf6', '#f43f5e']
+const PALETA = ['#6366f1', '#10b981', '#f59e0b', '#0ea5e9', '#8b5cf6', '#f43f5e', '#14b8a6']
 
 export default function Lideres() {
   const { db, setLiderFilter, navigate, irADirectorio } = useApp()

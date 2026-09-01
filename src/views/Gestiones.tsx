@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Filter, Plus, Search, Trash2, X } from 'lucide-react'
 import { useApp } from '../store'
 import { CATEGORIAS, LIDERES_INFO, balanceDe, getPersona, nombreLider } from '../data'
@@ -19,12 +19,12 @@ const EST_COLORS: Record<string, string> = {
   Pendiente: '#3b82f6',
   Cancelado: '#94a3b8',
 }
-const PALETA = ['#6366f1', '#10b981', '#f59e0b', '#0ea5e9', '#8b5cf6', '#f43f5e']
+const PALETA = ['#6366f1', '#10b981', '#f59e0b', '#0ea5e9', '#8b5cf6', '#f43f5e', '#14b8a6']
 const RESP_PALETA = ['#6366f1', '#10b981', '#f59e0b', '#0ea5e9', '#8b5cf6', '#f43f5e', '#14b8a6', '#f97316']
 const ESTADOS = ['Pendiente', 'En Proceso', 'Resuelto', 'Cancelado']
 
 export default function Gestiones() {
-  const { db, openGestion, deleteGestion, verPerfil, notify, liderFilter, setLiderFilter } = useApp()
+  const { db, openGestion, deleteGestion, verPerfil, notify, liderFilter, setLiderFilter, gestionesPreset, clearGestionesPreset } = useApp()
   const [q, setQ] = useState('')
   const [cat, setCat] = useState('all')
   const [est, setEst] = useState('all')
@@ -33,6 +33,15 @@ export default function Gestiones() {
   const [desde, setDesde] = useState('')
   const [hasta, setHasta] = useState('')
   const [showFiltros, setShowFiltros] = useState(false)
+
+  useEffect(() => {
+    if (gestionesPreset) {
+      if (gestionesPreset.estado) setEst(gestionesPreset.estado)
+      if (gestionesPreset.conMonto) setConMonto(gestionesPreset.conMonto)
+      clearGestionesPreset()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gestionesPreset])
 
   const responsables = useMemo(() => [...new Set(db.gestiones.map((g) => g.responsable))].sort(), [db])
 
@@ -364,12 +373,18 @@ export default function Gestiones() {
                   <tr key={g.id} className="hover:bg-slate-50 border-b border-slate-100">
                     <td className="px-3 py-2.5 text-sm font-medium whitespace-nowrap">{fmtFecha(g.fecha)}</td>
                     <td className="px-3 py-2.5 text-sm">
-                      <button onClick={() => p && verPerfil(p.id)} className="text-left text-blue-600 hover:underline font-medium">
-                        {p ? `${p.nombres} ${p.apellidos}` : '?'}
-                      </button>
-                      <div className="text-[10px] text-slate-400">
-                        CC {p?.cedula ?? '?'} · {nombreLider(p?.liderId ?? '')}
-                      </div>
+                      {p ? (
+                        <>
+                          <button onClick={() => verPerfil(p.id)} className="text-left text-blue-600 hover:underline font-medium">
+                            {p.nombres} {p.apellidos}
+                          </button>
+                          <div className="text-[10px] text-slate-400">
+                            CC {p.cedula} · {nombreLider(p.liderId ?? '')}
+                          </div>
+                        </>
+                      ) : (
+                        <span className="font-medium text-slate-500">General / Campaña</span>
+                      )}
                     </td>
                     <td className="px-3 py-2.5">
                       <Badge className="bg-slate-100 text-slate-700">{g.categoria}</Badge>

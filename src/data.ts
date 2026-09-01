@@ -8,7 +8,10 @@ import type {
   Gestion,
   LiderInfo,
   NivelAcademico,
+  PadrinoInfo,
+  Permiso,
   Persona,
+  Planilla,
   Posgrado,
   Puesto,
   TipoVehiculo,
@@ -20,7 +23,7 @@ import { diasParaCumple, hoyISO, mulberry32, pad } from './lib'
 
 export const DEPARTAMENTO_CAMPANA = 'Cesar'
 export const MUNICIPIO_CAMPANA = 'Valledupar'
-export const LS_KEY = 'crmElectoralReact_v8'
+export const LS_KEY = 'crmElectoralReact_v11'
 
 /* ---------- División político-administrativa ---------- */
 
@@ -101,25 +104,39 @@ export const puestosDeBarrio = (mun: string, barrio: string): Puesto[] =>
 /* ---------- Líderes y usuarios ---------- */
 
 export const LIDERES_INFO: LiderInfo[] = [
-  { id: 'L1', userId: 'lider1', nombres: 'Andrés', apellidos: 'Ramírez Muñoz', cedula: '1111000001', meta: 70, territorio: 'Comunas 1–2 · Valledupar', puestos: ['PV01', 'PV02', 'PV03', 'PV04', 'PV05', 'PV06'], errorRate: 0.06, rolDiaE: 'Testigo electoral', vehiculos: [{ tipo: 'Automóvil', capacidadPasajeros: 4, aDisposicion: true, estado: 'En ruta' }] },
-  { id: 'L2', userId: 'lider2', nombres: 'María Fernanda', apellidos: 'Gómez Ríos', cedula: '1111000002', meta: 70, territorio: 'Comunas 3–4 · Valledupar', puestos: ['PV07', 'PV08', 'PV09', 'PV10', 'PV11'], errorRate: 0.08, rolDiaE: 'Votante', vehiculos: [] },
-  { id: 'L3', userId: 'lider3', nombres: 'Carlos Alberto', apellidos: 'Torres Mejía', cedula: '1111000003', meta: 65, territorio: 'Comunas 5–6 · Valledupar', puestos: ['PV12', 'PV13', 'PV14', 'PV15'], errorRate: 0.14, rolDiaE: 'Conductor', vehiculos: [{ tipo: 'Camioneta', capacidadPasajeros: 12, aDisposicion: true, estado: 'En ruta' }] },
-  { id: 'L4', userId: 'lider4', nombres: 'Diana Marcela', apellidos: 'Rojas Díaz', cedula: '1111000004', meta: 50, territorio: 'Corregimientos Norte (Patillal, La Mina, Los Venados)', puestos: ['PV16', 'PV17', 'PV18'], errorRate: 0.24, rolDiaE: 'Votante', vehiculos: [{ tipo: 'Moto', capacidadPasajeros: 1, aDisposicion: true, estado: 'Disponible' }] },
-  { id: 'L5', userId: 'lider5', nombres: 'Jorge Enrique', apellidos: 'Mejía Soto', cedula: '1111000005', meta: 50, territorio: 'Corregimientos Sur (Guacoche, Valencia de Jesús, Aguas Blancas)', puestos: ['PV19', 'PV20', 'PV21'], errorRate: 0.24, rolDiaE: 'Conductor', vehiculos: [{ tipo: 'Camioneta', capacidadPasajeros: 10, aDisposicion: true, estado: 'Completado' }] },
-  { id: 'L6', userId: 'lider6', nombres: 'Patricia', apellidos: 'Salas Orozco', cedula: '1111000006', meta: 40, territorio: 'Zona mixta · control débil', puestos: ['PV02', 'PV09', 'PV14'], errorRate: 0.55, rolDiaE: 'Votante', vehiculos: [{ tipo: 'Moto', capacidadPasajeros: 1, aDisposicion: true, estado: 'Disponible' }] },
+  { id: 'L1', userId: 'lider1', nombres: 'Andrés', apellidos: 'Ramírez Muñoz', cedula: '1111000001', meta: 70, territorio: 'Comunas 1–2 · Valledupar', puestos: ['PV01', 'PV02', 'PV03', 'PV04', 'PV05', 'PV06'], errorRate: 0.06, rolDiaE: 'Testigo electoral', vehiculos: [{ tipo: 'Automóvil', capacidadPasajeros: 4, aDisposicion: true, estado: 'En ruta' }], padrinoId: 'P1' },
+  { id: 'L2', userId: 'lider2', nombres: 'María Fernanda', apellidos: 'Gómez Ríos', cedula: '1111000002', meta: 70, territorio: 'Comunas 3–4 · Valledupar', puestos: ['PV07', 'PV08', 'PV09', 'PV10', 'PV11'], errorRate: 0.08, rolDiaE: 'Votante', vehiculos: [], padrinoId: 'P1' },
+  { id: 'L3', userId: 'lider3', nombres: 'Carlos Alberto', apellidos: 'Torres Mejía', cedula: '1111000003', meta: 65, territorio: 'Comunas 5–6 · Valledupar', puestos: ['PV12', 'PV13', 'PV14', 'PV15'], errorRate: 0.14, rolDiaE: 'Conductor', vehiculos: [{ tipo: 'Camioneta', capacidadPasajeros: 12, aDisposicion: true, estado: 'En ruta' }], padrinoId: 'P2' },
+  { id: 'L4', userId: 'lider4', nombres: 'Diana Marcela', apellidos: 'Rojas Díaz', cedula: '1111000004', meta: 50, territorio: 'Corregimientos Norte (Patillal, La Mina, Los Venados)', puestos: ['PV16', 'PV17', 'PV18'], errorRate: 0.24, rolDiaE: 'Votante', vehiculos: [{ tipo: 'Moto', capacidadPasajeros: 1, aDisposicion: true, estado: 'Disponible' }], padrinoId: 'P2' },
+  { id: 'L5', userId: 'lider5', nombres: 'Jorge Enrique', apellidos: 'Mejía Soto', cedula: '1111000005', meta: 50, territorio: 'Corregimientos Sur (Guacoche, Valencia de Jesús, Aguas Blancas)', puestos: ['PV19', 'PV20', 'PV21'], errorRate: 0.24, rolDiaE: 'Conductor', vehiculos: [{ tipo: 'Camioneta', capacidadPasajeros: 10, aDisposicion: true, estado: 'Completado' }], padrinoId: 'P3' },
+  { id: 'L6', userId: 'lider6', nombres: 'Patricia', apellidos: 'Salas Orozco', cedula: '1111000006', meta: 40, territorio: 'Zona mixta · control débil', puestos: ['PV02', 'PV09', 'PV14'], errorRate: 0.55, rolDiaE: 'Votante', vehiculos: [{ tipo: 'Moto', capacidadPasajeros: 1, aDisposicion: true, estado: 'Disponible' }], padrinoId: 'P3' },
+  { id: 'L0', userId: 'candidato', nombres: 'Candidato', apellidos: 'Entorno', cedula: '1111000000', meta: 30, territorio: 'Entorno del candidato (amigos y familiares)', puestos: ['PV01', 'PV03', 'PV05', 'PV07', 'PV09'], errorRate: 0, rolDiaE: 'Votante', vehiculos: [], padrinoId: 'P1' },
+]
+
+export const PADRINOS_INFO = [
+  { id: 'P1', userId: 'padrino1', nombres: 'Luisa', apellidos: 'Castro Peña', cedula: '1111001001', sector: 'Comunas 1–4', personaId: 'P1' },
+  { id: 'P2', userId: 'padrino2', nombres: 'Miguel', apellidos: 'Vargas Ortiz', cedula: '1111001002', sector: 'Comunas 5–6 · Corregimientos Norte', personaId: 'P2' },
+  { id: 'P3', userId: 'padrino3', nombres: 'Carolina', apellidos: 'Jiménez Ríos', cedula: '1111001003', sector: 'Corregimientos Sur · Zona mixta', personaId: undefined },
 ]
 
 export const USUARIOS: Usuario[] = [
   { id: 'admin', nombre: 'Director de Campaña', email: 'admin@campana.com', pass: 'admin123', rol: 'admin' },
-  ...LIDERES_INFO.map((l) => ({
-    id: l.userId,
-    nombre: `${l.nombres} ${l.apellidos}`,
-    email: `${l.userId}@campana.com`,
-    pass: 'lider123',
-    rol: 'lider' as const,
-    liderId: l.id,
+  { id: 'subadmin1', nombre: 'Coordinador de Conectividad', email: 'conectividad@campana.com', pass: 'subadmin123', rol: 'subadmin', permisos: ['conectividad'] },
+  ...PADRINOS_INFO.map((p) => ({
+    id: p.userId,
+    nombre: `${p.nombres} ${p.apellidos}`,
+    email: `${p.userId}@campana.com`,
+    pass: 'padrino123',
+    rol: 'padrino' as const,
+    padrinoId: p.id,
   })),
 ]
+
+export function can(u: Usuario | null | undefined, permiso: Permiso): boolean {
+  if (!u) return false
+  if (u.rol === 'admin') return true
+  return !!u.permisos?.includes(permiso)
+}
 
 export const CATEGORIAS: CategoriaGestion[] = [
   'Salud', 'Empleo', 'Ayudas/Mercados', 'Recursos/Dinero', 'Trámites/Asesoría', 'Obras comunitarias',
@@ -174,9 +191,27 @@ export function buscarPuesto(id: string): Puesto | undefined {
   return PUESTOS.find((p) => p.id === id)
 }
 
-export function nombreLider(lid: string): string {
+export function nombreLider(lid?: string): string {
   const l = LIDERES_INFO.find((x) => x.id === lid)
   return l ? `${l.nombres} ${l.apellidos}` : '—'
+}
+
+export function nombrePadrino(db: DB, pid?: string): string {
+  const p = db.padrinos.find((x) => x.id === pid)
+  return p ? p.nombre : '—'
+}
+
+export function lideresDePadrino(db: DB, pid: string): LiderInfo[] {
+  return LIDERES_INFO.filter((l) => (db.padrinoLider[l.id] ?? '') === pid)
+}
+
+export function camposFaltantes(p: { telefono: string; correo: string; direccion: string; barrio: string }): string[] {
+  const faltan: string[] = []
+  if (!p.telefono) faltan.push('teléfono')
+  if (!p.correo) faltan.push('correo')
+  if (!p.direccion) faltan.push('dirección')
+  if (!p.barrio) faltan.push('barrio')
+  return faltan
 }
 
 export function territorioDeLider(lid: string): string {
@@ -184,8 +219,8 @@ export function territorioDeLider(lid: string): string {
   return l ? l.territorio : '—'
 }
 
-export const getPersona = (db: DB, id: string): Persona | undefined =>
-  db.personas.find((p) => p.id === id)
+export const getPersona = (db: DB, id?: string): Persona | undefined =>
+  id ? db.personas.find((p) => p.id === id) : undefined
 
 export const gestionesDe = (db: DB, pid: string): Gestion[] =>
   db.gestiones.filter((g) => g.personaId === pid)
@@ -265,6 +300,7 @@ export function destinatariosFiltrados(db: DB, f: FiltrosEnvio): Persona[] {
       )
       if (!match) return false
     }
+    if (f.cumpleanos && diasParaCumple(p.fechaNacimiento) > 7) return false
     return true
   })
 }
@@ -551,6 +587,7 @@ export function generarEstado(): DB {
     { profesion: 'Trabajador/a Social', nivelAcademico: 'Profesional' as const, posgrado: 'Ninguno' as const },
     { profesion: 'Sin profesión', nivelAcademico: 'Tecnólogo' as const, posgrado: 'Ninguno' as const },
     { profesion: 'Sin profesión', nivelAcademico: 'Bachiller' as const, posgrado: 'Ninguno' as const },
+    { profesion: 'Candidato/a', nivelAcademico: 'Profesional' as const, posgrado: 'Ninguno' as const },
   ]
   LIDERES_INFO.forEach((l, i) => {
     const p = buscarPuesto(l.puestos[0])!
@@ -594,6 +631,46 @@ export function generarEstado(): DB {
     })
   })
 
+  // 2b) Padrinos que también son simpatizantes (quienes tienen personaId)
+  PADRINOS_INFO.filter((p) => p.personaId).forEach((p, i) => {
+    const pv = PUESTOS[i % PUESTOS.length]
+    personas.push({
+      id: p.personaId!,
+      nombres: p.nombres,
+      apellidos: p.apellidos,
+      cedula: p.cedula,
+      fechaNacimiento: `${anioActual - 25 - i}-${pad(1 + i)}-${pad(10 + i)}`,
+      telefono: '3' + String(200000000 + Math.floor(rng() * 899999999)).slice(0, 9),
+      correo: p.userId + '@campana.com',
+      direccion: 'Sede de campaña',
+      departamento: 'Cesar',
+      municipio: 'Valledupar',
+      zona: 'Urbana',
+      comuna: 'Comuna 1',
+      barrio: 'Centro',
+      puesto: pv.id,
+      mesa: pv.mesaBase,
+      intereses: ['Empleo'],
+      gruposSociales: [],
+      ocupacion: 'Digitador / Mesa de datos',
+      profesion: 'Administrador/a',
+      nivelAcademico: 'Profesional',
+      posgrado: 'Ninguno',
+      observacion: '',
+      vehiculos: [],
+      nivelVoto: 'Firme',
+      rolDiaE: 'Votante',
+      votoRegistrado: false,
+      votoHora: '',
+      habeasData: true,
+      habeasDataFecha: hoyISO(),
+      esLider: false,
+      esPadrino: true,
+      creadoEn: new Date().toISOString(),
+      creadoPor: 'seed',
+    })
+  })
+
   // 3) 500 simpatizantes distribuidos entre los 6 líderes
   const cuotas: [LiderInfo, number][] = [
     [LIDERES_INFO[0], 90],
@@ -602,6 +679,7 @@ export function generarEstado(): DB {
     [LIDERES_INFO[3], 70],
     [LIDERES_INFO[4], 70],
     [LIDERES_INFO[5], 95],
+    [LIDERES_INFO[6], 30],
   ]
   for (const [l, n] of cuotas) {
     const terPool = censo.filter((c) => l.puestos.includes(c.puesto))
@@ -617,6 +695,30 @@ export function generarEstado(): DB {
       personas.push(makePersona(cen, l.id))
     }
   }
+
+  // 3b) Planillas físicas y asignación a simpatizantes (auditoría Habeas Data)
+  const planillas: Planilla[] = [
+    { id: 'PLA1', codigo: 'PL-00001', liderId: 'L1', padrinoId: 'P1', estado: 'cargada', fechaEntrega: '2025-01-10', fechaDigitacion: '2025-01-11', registros: 20 },
+    { id: 'PLA2', codigo: 'PL-00002', liderId: 'L1', padrinoId: 'P1', estado: 'entregada', fechaEntrega: '2025-01-12', fechaDigitacion: '', registros: 15 },
+    { id: 'PLA3', codigo: 'PL-00003', liderId: 'L2', padrinoId: 'P1', estado: 'completa', fechaEntrega: '2025-01-11', fechaDigitacion: '2025-01-12', registros: 25 },
+    { id: 'PLA4', codigo: 'PL-00004', liderId: 'L3', padrinoId: 'P2', estado: 'auditada', fechaEntrega: '2025-01-08', fechaDigitacion: '2025-01-09', registros: 18 },
+    { id: 'PLA5', codigo: 'PL-00005', liderId: 'L4', padrinoId: 'P2', estado: 'entregada', fechaEntrega: '2025-01-13', fechaDigitacion: '', registros: 12 },
+    { id: 'PLA6', codigo: 'PL-00006', liderId: 'L5', padrinoId: 'P3', estado: 'cargada', fechaEntrega: '2025-01-12', fechaDigitacion: '2025-01-13', registros: 22 },
+    { id: 'PLA7', codigo: 'PL-00007', liderId: 'L6', padrinoId: 'P3', estado: 'entregada', fechaEntrega: '2025-01-13', fechaDigitacion: '', registros: 10 },
+    { id: 'PLA8', codigo: 'PL-00008', liderId: 'L0', padrinoId: 'P1', estado: 'cargada', fechaEntrega: '2025-01-14', fechaDigitacion: '2025-01-15', registros: 30 },
+  ]
+  const codigosPorLider: Record<string, string[]> = {}
+  planillas.forEach((pl) => {
+    ;(codigosPorLider[pl.liderId] = codigosPorLider[pl.liderId] || []).push(pl.codigo)
+  })
+  personas.forEach((p) => {
+    if (p.esLider || p.esPadrino) return
+    const codigos = codigosPorLider[p.liderId ?? '']
+    if (codigos && codigos.length > 0) {
+      p.planillaCodigo = codigos[Math.floor(rng() * codigos.length)]
+      if (rng() < 0.3) p.telefono = ''
+    }
+  })
 
   // 4) Inyectar cumpleañeros de "hoy" y "esta semana"
   const hoy = new Date()
@@ -685,7 +787,8 @@ export function generarEstado(): DB {
     p.votoRegistrado = true
     const h = 7 + Math.floor((idx / nVotados) * 3)
     p.votoHora = `${pad(h)}:${pad(Math.floor(rng() * 60))}`
-    votosPorLider[p.liderId] = (votosPorLider[p.liderId] || 0) + 1
+    const lid = p.liderId ?? ''
+    votosPorLider[lid] = (votosPorLider[lid] || 0) + 1
   })
 
   const actividadDiaE: ActividadDiaE[] = []
@@ -708,5 +811,19 @@ export function generarEstado(): DB {
     })
   })
 
-  return { censo, personas, gestiones, comunicaciones, logsHabeas, actividadDiaE, horaDiaE, generado: new Date().toISOString() }
+  const padrinoLider: Record<string, string> = {}
+  LIDERES_INFO.forEach((l) => {
+    padrinoLider[l.id] = l.padrinoId ?? ''
+  })
+  const padrinos: PadrinoInfo[] = PADRINOS_INFO.map((p) => ({
+    id: p.id,
+    nombre: `${p.nombres} ${p.apellidos}`,
+    cedula: p.cedula,
+    sector: p.sector,
+    activo: true,
+    personaId: p.personaId,
+    userId: p.userId,
+  }))
+
+  return { censo, personas, gestiones, comunicaciones, logsHabeas, actividadDiaE, planillas, padrinoLider, padrinos, usuarios: [...USUARIOS], horaDiaE, generado: new Date().toISOString() }
 }
