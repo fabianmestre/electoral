@@ -1,4 +1,8 @@
 node_modules
 dist
+build-consulta-check/
 *.local
 .DS_Store
+.env
+.env.*
+!.env.example

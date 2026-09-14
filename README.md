@@ -1,38 +1,40 @@
-# CRM Electoral — Campaña al Concejo de Valledupar (Cesar · Colombia)
+# CRM Electoral
 
-Prototipo técnico funcional construido con **React 19 + TypeScript + Vite + Tailwind CSS 4 + lucide-react + motion**.
+El proyecto se organiza en dos carpetas:
 
-## Modelo de datos
-- Jerarquía: **Departamento → Municipio → (Comuna | Corregimiento) → Barrio → Puesto de votación** (1 o varios puestos por barrio, cada uno con mesas).
-- **Regla de validez**: solo vota en el Concejo de Valledupar quien está censado en `Cesar + Valledupar`. Los registros de otros municipios o departamentos se marcan como **error del líder**.
-- Mock determinista: **6 líderes**, **500 simpatizantes**, censo de **726 cédulas**, **40 gestiones**, **27 puestos de votación**.
+- `front/`: aplicación React, TypeScript, Vite y Tailwind CSS.
+- `back/`: servidor Node.js con módulos ES y HTTP nativo.
 
-## Requisitos
-- Node.js 18+
+## Frontend
 
-## Instalación y ejecución
 ```bash
+cd front
 npm install
-npm run dev        # http://localhost:3001
+npm run dev
 ```
 
-> El puerto **3001** se usa para no chocar con `glovall-b2b` (que corre en el 3000).
+Disponible en http://localhost:3001. Para compilar: `npm run build`.
+Consulta `front/README.md` para los detalles y accesos del prototipo.
 
-## Verificación de tipos y build
+## Backend
+
+Requiere Node.js 20.12 o superior. No tiene dependencias externas.
+Configura `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY` en `back/.env`.
+
 ```bash
-npm run typecheck  # tsc --noEmit
-npm run build      # tsc --noEmit && vite build
+cd back
+npm run dev
 ```
 
-## Accesos (RBAC)
-| Rol | Correo | Clave |
-| --- | --- | --- |
-| Administrador | admin@campana.com | admin123 |
-| Líder 1 · Comunas 1–2 | lider1@campana.com | lider123 |
-| Líder 2 · Comunas 3–4 | lider2@campana.com | lider123 |
-| Líder 3 · Comunas 5–6 | lider3@campana.com | lider123 |
-| Líder 4 · Corregimientos Norte | lider4@campana.com | lider123 |
-| Líder 5 · Corregimientos Sur | lider5@campana.com | lider123 |
-| Líder 6 · Zona mixta (control débil) | lider6@campana.com | lider123 |
+Disponible en http://localhost:3002. La variable de entorno `PORT` permite cambiar el puerto.
+`GET /api/health` devuelve `{ "status": "ok" }`.
+Para ejecutar sin modo de desarrollo: `npm start`.
 
-Los datos se generan de forma determinista y persisten en `localStorage`.
+El login usa correo y contraseña a través de `/api/auth/login` y Supabase Auth.
+El perfil activo y su rol se consultan en `public.users` con las políticas RLS.
+La sesión se conserva en la pestaña hasta que venza el token o se cierre sesión.
+Vite redirige `/api` al backend durante el desarrollo.
+
+Ejecuta `back/sql/001_users.sql` y después `back/sql/002_seed_users.sql` en Supabase.
+El segundo script crea las cinco cuentas iniciales con contraseña `123456`.
+Los demás módulos del frontend todavía usan sus datos locales.
