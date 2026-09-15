@@ -1,0 +1,33 @@
+services:
+  back:
+    build:
+      context: ./back
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3002
+      SUPABASE_URL: ${SUPABASE_URL:?}
+      SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY:?}
+      SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY:?}
+    expose:
+      - "3002"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3002/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  front:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    environment:
+      SERVICE_URL_FRONT_80: /
+    expose:
+      - "80"
+    depends_on:
+      back:
+        condition: service_healthy
+    restart: unless-stopped

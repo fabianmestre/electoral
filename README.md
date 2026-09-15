@@ -53,6 +53,16 @@ puerto publicado con `APP_PORT`. Nginx sirve el frontend y envía `/api` al
 backend por la red interna de Compose. Para revisar el estado usa
 `docker compose ps` y para detener el despliegue `docker compose down`.
 
+### Coolify
+
+En una aplicación conectada al repositorio selecciona **Docker Compose** como
+Build Pack, usa `/` como Base Directory y `/docker-compose.coolify.yml` como
+Docker Compose Location. En Environment Variables registra `SUPABASE_URL`,
+`SUPABASE_PUBLISHABLE_KEY` y `SUPABASE_SECRET_KEY`; las tres son variables de
+runtime y la clave secreta debe marcarse como Secret. Asigna el dominio público
+únicamente al servicio `front`, que escucha en el puerto interno 80. El servicio
+`back` permanece privado y Nginx le envía las solicitudes `/api`.
+
 ## Digitadores
 
 Ejecuta `back/sql/013_digitadores.sql` después de las migraciones anteriores.
