@@ -18,6 +18,7 @@ const initial = { nombreCompleto: '', cedula: '', celular: '', direccion: '', de
 
 export default function CapturaPlanillaModal({ open, lideres, usuarios, onClose, onSaved, notify, embedded = false, defaultLiderId = '', capturaLider = false }: Props) {
   const [form, setForm] = useState({ ...initial, liderId: defaultLiderId })
+  const [liderQuery, setLiderQuery] = useState('')
   const [busy, setBusy] = useState(false)
   const lider = lideres.find((item) => item.id === form.liderId)
   const padrino = usuarios.find((item) => item.id === lider?.padrinoId)
@@ -32,6 +33,7 @@ export default function CapturaPlanillaModal({ open, lideres, usuarios, onClose,
   function close() {
     if (busy) return
     setForm({ ...initial, liderId: defaultLiderId })
+    setLiderQuery('')
     onClose()
   }
 
@@ -49,6 +51,7 @@ export default function CapturaPlanillaModal({ open, lideres, usuarios, onClose,
       await onSaved()
       notify('Fila de planilla guardada con su líder y padrino asociados.', 'success')
       setForm({ ...initial, liderId: defaultLiderId })
+      setLiderQuery('')
       onClose()
     } catch (error) {
       notify(error instanceof Error ? error.message : 'No se pudo guardar la fila.', 'error')
@@ -57,9 +60,21 @@ export default function CapturaPlanillaModal({ open, lideres, usuarios, onClose,
 
   const patch = (values: Partial<typeof initial>) => setForm((current) => ({ ...current, ...values }))
   const numeric = (value: string) => value.replace(/\D/g, '')
+  const leaderName = (item: LiderApi) => `${item.nombres} ${item.apellidos}`
+
+  function buscarLider(value: string) {
+    setLiderQuery(value)
+    const normalized = value.trim().toLocaleLowerCase('es-CO')
+    const match = lideres.find((item) => leaderName(item).toLocaleLowerCase('es-CO') === normalized)
+    patch({ liderId: match?.id ?? '' })
+  }
 
   const fields = <form id="captura-planilla" onSubmit={(event) => { event.preventDefault(); void submit() }} className="grid gap-3 sm:grid-cols-2">
-      {!defaultLiderId && <label className="text-sm sm:col-span-2">Líder al que pertenece *<select autoFocus required className={inputCls} value={form.liderId} onChange={(e) => patch({ liderId: e.target.value })}><option value="">— Seleccionar líder —</option>{lideres.map((item) => <option key={item.id} value={item.id}>{item.nombres} {item.apellidos}</option>)}</select></label>}
+      {!defaultLiderId && <label className="text-sm sm:col-span-2">Líder al que pertenece *
+        <input autoFocus required list="lideres-captura" autoComplete="off" className={inputCls} value={liderQuery} onChange={(e) => buscarLider(e.target.value)} placeholder="Escribe para buscar un líder" />
+        <datalist id="lideres-captura">{lideres.map((item) => <option key={item.id} value={leaderName(item)} />)}</datalist>
+        {liderQuery && !form.liderId && <span className="mt-1 block text-xs text-amber-700">Selecciona una coincidencia de la lista.</span>}
+      </label>}
       {form.liderId && <div className="sm:col-span-2 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-800">Líder: <strong>{lider ? `${lider.nombres} ${lider.apellidos}` : 'Cuenta actual'}</strong> · Padrino: <strong>{padrino?.nombre || 'Asociado automáticamente'}</strong></div>}
       <label className="text-sm sm:col-span-2">Nombre y apellidos *<input autoFocus={Boolean(defaultLiderId)} required maxLength={200} className={inputCls} value={form.nombreCompleto} onChange={(e) => patch({ nombreCompleto: e.target.value })} /></label>
       <label className="text-sm">Cédula *<input required inputMode="numeric" maxLength={10} className={inputCls} value={form.cedula} onChange={(e) => patch({ cedula: numeric(e.target.value) })} /></label>
