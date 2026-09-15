@@ -22,7 +22,7 @@ import {
   puestosDeBarrio,
 } from '../data'
 import type { SimpatizanteApi, Validez } from '../types'
-import { Badge, nivelAcademicoTone, nivelTone, validezLabel, validezTone } from '../components/ui'
+import { Badge, nivelAcademicoTone, nivelTone } from '../components/ui'
 
 const esValidoApi = (p: SimpatizanteApi) => p.departamento === DEPARTAMENTO_CAMPANA && p.municipio === MUNICIPIO_CAMPANA
 const validezDeApi = (p: SimpatizanteApi): Validez => {
@@ -513,10 +513,10 @@ export default function Directorio() {
       {/* Tabla */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1180px] text-left">
+          <table className="w-full min-w-[980px] text-left">
             <thead className="bg-slate-50">
               <tr>
-                {['Persona', 'Cédula', 'Departamento', 'Municipio', 'Comuna/Correg.', 'Barrio', 'Perfil', 'Líder', 'Nivel', 'Validez', 'Vehículo', 'Acciones'].map((h) => (
+                {['Persona', 'Cédula', 'Departamento', 'Municipio', 'Comuna/Correg.', 'Barrio', 'Perfil', 'Líder', 'Nivel', 'Acciones'].map((h) => (
                   <th key={h} className="text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500 px-2.5 py-2 border-b border-slate-200 whitespace-nowrap">
                     {h}
                   </th>
@@ -526,7 +526,7 @@ export default function Directorio() {
             <tbody>
               {paginado.length === 0 && (
                 <tr>
-                  <td colSpan={12} className="px-2.5 py-10 text-slate-400 text-xs text-center">
+                  <td colSpan={10} className="px-2.5 py-10 text-slate-400 text-xs text-center">
                     {cargandoSimpatizantes ? 'Cargando simpatizantes…' : 'Sin resultados para los filtros aplicados.'}
                   </td>
                 </tr>
@@ -553,18 +553,6 @@ export default function Directorio() {
                   <td className="px-2.5 py-1.5 text-xs text-slate-600 whitespace-nowrap">{nombreLiderApi(p.liderId)}</td>
                   <td className="px-2.5 py-1.5 whitespace-nowrap">
                     <Badge className={nivelTone(p.nivelVoto)}>{p.nivelVoto}</Badge>
-                  </td>
-                  <td className="px-2.5 py-1.5 whitespace-nowrap">
-                    <Badge className={validezTone(validezDeApi(p))}>{validezLabel(validezDeApi(p))}</Badge>
-                  </td>
-                  <td className="px-2.5 py-1.5 whitespace-nowrap">
-                    {p.vehiculos.length === 0 ? (
-                      <Badge className="bg-slate-200 text-slate-600">Sin vehículo</Badge>
-                    ) : (
-                      <Badge className="bg-slate-100 text-slate-700">
-                        {p.vehiculos.length} veh · {p.vehiculos.filter((v) => v.aDisposicion).length} disp.
-                      </Badge>
-                    )}
                   </td>
                   <td className="px-2.5 py-1.5">
                     <div className="flex items-center gap-0.5">
