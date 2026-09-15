@@ -69,7 +69,7 @@ export default function Digitador() {
 
   const text = query.trim().toLowerCase()
   const personas = simpatizantesApi.filter((p) => (!liderId || p.liderId === liderId)
-    && `${p.nombres} ${p.apellidos} ${p.cedula} ${p.numeroPlanilla ?? ''}`.toLowerCase().includes(text))
+    && `${p.nombres} ${p.apellidos} ${p.cedula}`.toLowerCase().includes(text))
 
   if (!esAdmin) {
     const liderPropio = session?.rol === 'lider' ? lideresApi.find((item) => item.userId === session.id) : undefined
@@ -111,18 +111,17 @@ export default function Digitador() {
       <Card title={session?.rol === 'lider' ? 'Mis simpatizantes' : 'Digitación de planillas'} action={<button type="button" className={buttonCls} onClick={() => session?.rol === 'lider' ? openPersona({ mode: 'new' }) : setCapturaOpen(true)}>+ {session?.rol === 'lider' ? 'Registrar simpatizante' : 'Capturar fila'}</button>}>
         <p className="text-sm text-slate-500 mb-3">{session?.rol === 'lider' ? 'Registra o completa las fichas de tus simpatizantes. Tu padrino podrá consultar los datos.' : 'Transcribe los datos de la planilla y asócialos con el líder correspondiente. El padrino se asigna automáticamente.'}</p>
         <div className="grid sm:grid-cols-2 gap-3 mb-4">
-          <label className="text-sm">Buscar por nombre, cédula o número<input className={inputCls} value={query} onChange={(e) => setQuery(e.target.value)} /></label>
+          <label className="text-sm">Buscar por nombre o cédula<input className={inputCls} value={query} onChange={(e) => setQuery(e.target.value)} /></label>
           <label className="text-sm">Líder<select className={inputCls} value={liderId} onChange={(e) => setLiderId(e.target.value)}><option value="">Todos los líderes</option>{lideresApi.map((l) => <option key={l.id} value={l.id}>{l.nombres} {l.apellidos}</option>)}</select></label>
         </div>
         <div className="overflow-x-auto"><table className="w-full min-w-[1500px] text-left text-sm">
-          <thead className="bg-slate-50"><tr>{['No.', 'Nombre y apellidos', 'Cédula', 'Celular', 'Dirección', 'Barrio', 'Lugar de votación', 'Mesa', 'Vehículo', 'Líder / padrino', 'Registrado por', 'Acción'].map((label) => <th key={label} className="p-3 whitespace-nowrap">{label}</th>)}</tr></thead>
+          <thead className="bg-slate-50"><tr>{['Nombre y apellidos', 'Cédula', 'Celular', 'Dirección', 'Barrio', 'Lugar de votación', 'Mesa', 'Vehículo', 'Líder / padrino', 'Registrado por', 'Acción'].map((label) => <th key={label} className="p-3 whitespace-nowrap">{label}</th>)}</tr></thead>
           <tbody>
-            {!personas.length && <tr><td colSpan={12} className="p-4 text-slate-500">{cargandoSimpatizantes ? 'Cargando…' : 'Sin registros para los filtros aplicados.'}</td></tr>}
+            {!personas.length && <tr><td colSpan={11} className="p-4 text-slate-500">{cargandoSimpatizantes ? 'Cargando…' : 'Sin registros para los filtros aplicados.'}</td></tr>}
             {personas.map((p) => {
               const lider = lideresApi.find((l) => l.id === p.liderId)
               const padrino = usuariosApi.find((u) => u.id === lider?.padrinoId)
               return <tr key={p.id} className="border-b border-slate-100">
-                <td className="p-3">{p.numeroPlanilla ?? '—'}</td>
                 <td className="p-3 whitespace-nowrap">{p.nombreCompletoOriginal || `${p.nombres} ${p.apellidos}`}</td>
                 <td className="p-3">{p.cedula}</td>
                 <td className="p-3 whitespace-nowrap">{p.telefono}</td>

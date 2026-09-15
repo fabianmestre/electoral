@@ -13,7 +13,7 @@ interface Props {
   defaultLiderId?: string
 }
 
-const initial = { numero: '', nombreCompleto: '', cedula: '', celular: '', direccion: '', departamento: 'Cesar', municipio: 'Valledupar', barrio: '', puesto: '', mesa: '', liderId: '', tieneVehiculo: false, tipoVehiculo: '' }
+const initial = { nombreCompleto: '', cedula: '', celular: '', direccion: '', departamento: 'Cesar', municipio: 'Valledupar', barrio: '', puesto: '', mesa: '', liderId: '', tieneVehiculo: false, tipoVehiculo: '' }
 
 export default function CapturaPlanillaModal({ open, lideres, usuarios, onClose, onSaved, notify, embedded = false, defaultLiderId = '' }: Props) {
   const [form, setForm] = useState({ ...initial, liderId: defaultLiderId })
@@ -22,7 +22,7 @@ export default function CapturaPlanillaModal({ open, lideres, usuarios, onClose,
   const padrino = usuarios.find((item) => item.id === lider?.padrinoId)
   useEffect(() => { if (defaultLiderId) setForm((current) => ({ ...current, liderId: defaultLiderId })) }, [defaultLiderId])
   const valido = useMemo(() => Boolean(
-    form.numero && form.nombreCompleto.trim().includes(' ') && /^[0-9]{6,10}$/.test(form.cedula)
+    form.nombreCompleto.trim().includes(' ') && /^[0-9]{6,10}$/.test(form.cedula)
     && form.celular.trim() && form.direccion.trim() && form.departamento.trim() && form.municipio.trim() && form.barrio.trim() && form.puesto.trim()
     && form.mesa && form.liderId && (!form.tieneVehiculo || form.tipoVehiculo)
   ), [form])
@@ -40,7 +40,7 @@ export default function CapturaPlanillaModal({ open, lideres, usuarios, onClose,
       const response = await fetch('/api/digitacion/planillas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem('electoral.auth.token')}` },
-        body: JSON.stringify({ ...form, numero: Number(form.numero), mesa: Number(form.mesa), tipoVehiculo: form.tieneVehiculo ? form.tipoVehiculo : null }),
+        body: JSON.stringify({ ...form, mesa: Number(form.mesa), tipoVehiculo: form.tieneVehiculo ? form.tipoVehiculo : null }),
       })
       const data = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(data.error || 'No se pudo guardar la fila de la planilla.')
@@ -59,8 +59,7 @@ export default function CapturaPlanillaModal({ open, lideres, usuarios, onClose,
   const fields = <form id="captura-planilla" onSubmit={(event) => { event.preventDefault(); void submit() }} className="grid gap-3 sm:grid-cols-2">
       {!defaultLiderId && <label className="text-sm sm:col-span-2">Líder al que pertenece *<select autoFocus required className={inputCls} value={form.liderId} onChange={(e) => patch({ liderId: e.target.value })}><option value="">— Seleccionar líder —</option>{lideres.map((item) => <option key={item.id} value={item.id}>{item.nombres} {item.apellidos}</option>)}</select></label>}
       {form.liderId && <div className="sm:col-span-2 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-800">Líder: <strong>{lider ? `${lider.nombres} ${lider.apellidos}` : 'Cuenta actual'}</strong> · Padrino: <strong>{padrino?.nombre || 'Asociado automáticamente'}</strong></div>}
-      <label className="text-sm">No. *<input autoFocus={Boolean(defaultLiderId)} required min="1" type="number" className={inputCls} value={form.numero} onChange={(e) => patch({ numero: e.target.value })} /></label>
-      <label className="text-sm">Nombre y apellidos *<input required maxLength={200} className={inputCls} value={form.nombreCompleto} onChange={(e) => patch({ nombreCompleto: e.target.value })} /></label>
+      <label className="text-sm sm:col-span-2">Nombre y apellidos *<input autoFocus={Boolean(defaultLiderId)} required maxLength={200} className={inputCls} value={form.nombreCompleto} onChange={(e) => patch({ nombreCompleto: e.target.value })} /></label>
       <label className="text-sm">Cédula *<input required inputMode="numeric" maxLength={10} className={inputCls} value={form.cedula} onChange={(e) => patch({ cedula: numeric(e.target.value) })} /></label>
       <label className="text-sm">Celular *<input required inputMode="tel" maxLength={30} className={inputCls} value={form.celular} onChange={(e) => patch({ celular: e.target.value })} /></label>
       <label className="text-sm sm:col-span-2">Dirección de residencia *<input required maxLength={300} className={inputCls} value={form.direccion} onChange={(e) => patch({ direccion: e.target.value })} /></label>

@@ -3,7 +3,6 @@ import assert from 'node:assert/strict'
 import { validarCapturaPlanilla } from './digitacion-planillas.js'
 
 const base = {
-  numero: 7,
   nombreCompleto: 'Ana María Pérez Gómez',
   cedula: '1065840035',
   celular: '300 123 4567',
@@ -20,7 +19,7 @@ const base = {
 
 test('normaliza la fila de planilla y conserva el nombre original', () => {
   assert.deepEqual(validarCapturaPlanilla(base), {
-    numero_planilla: 7,
+    numero_planilla: null,
     nombre_completo_original: 'Ana María Pérez Gómez',
     nombres: 'Ana María', apellidos: 'Pérez Gómez', cedula: '1065840035', fecha_nacimiento: null,
     telefono: '300 123 4567', direccion: 'Calle 10 # 2-30', departamento: 'Cesar', municipio: 'Valledupar',

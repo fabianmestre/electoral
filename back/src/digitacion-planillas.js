@@ -20,9 +20,7 @@ export function validarCapturaPlanilla(input) {
   const telefono = texto(input.celular, 'celular', 30)
   const digits = telefono.replace(/\D/g, '')
   if (!/^\+?[\d ()-]+$/.test(telefono) || digits.length < 7 || digits.length > 15) throw new ApiError(422, 'Ingresa un celular válido.')
-  const numero = Number(input.numero)
   const mesa = Number(input.mesa)
-  if (!Number.isInteger(numero) || numero < 1) throw new ApiError(422, 'Ingresa un número de fila válido.')
   if (!Number.isInteger(mesa) || mesa < 1) throw new ApiError(422, 'Ingresa una mesa válida.')
   if (!UUID.test(input.liderId ?? '')) throw new ApiError(422, 'Selecciona el líder al que pertenece la planilla.')
   if (typeof input.tieneVehiculo !== 'boolean') throw new ApiError(422, 'Indica si tiene vehículo.')
@@ -30,7 +28,7 @@ export function validarCapturaPlanilla(input) {
   if (tipoVehiculo && !['Carro', 'Moto'].includes(tipoVehiculo)) throw new ApiError(422, 'El vehículo debe ser Carro o Moto.')
 
   return {
-    numero_planilla: numero,
+    numero_planilla: null,
     nombre_completo_original: nombreCompleto,
     nombres: partes.slice(0, corte).join(' '),
     apellidos: partes.slice(corte).join(' '),
