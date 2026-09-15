@@ -21,6 +21,9 @@ async function adminRequest(path, options = {}) {
   try { data = text ? JSON.parse(text) : null } catch { throw new ApiError(502, 'El servicio devolvió una respuesta inválida.') }
   if (response.ok) return data
   if (data?.code === '23503') throw new ApiError(409, 'No se pueden borrar los padrinos: tienen líderes o registros asociados. Reasigna o elimina esos datos primero.')
+  if (data?.code === '23514' && /users_rol_check/i.test(data?.message || data?.details || '')) {
+    throw new ApiError(503, 'El rol Gestor aún no está habilitado en Supabase. Ejecuta back/sql/021_gestores.sql y vuelve a intentarlo.')
+  }
   if (data?.code === 'PGRST202' || data?.code === '42883') throw new ApiError(503,
     path.includes('crear_padrino_sin_correo') ? 'Ejecuta 015_campos_padrinos.sql en Supabase para registrar padrinos sin correo.' : 'Falta habilitar el borrado de padrinos. Ejecuta 014_borrar_padrinos.sql en Supabase.')
   if (response.status === 409 || data?.code === '23505' || /already.*registered/i.test(data?.msg || data?.message || '')) {
