@@ -3,7 +3,7 @@ import { ChevronUp, LogOut } from 'lucide-react'
 import type { Usuario, UserRole } from '../types'
 
 const ROLES: Record<UserRole, string> = {
-  admin: 'Administrador', subadmin: 'Subadministrador', padrino: 'Padrino', digitador: 'Digitador', lider: 'Líder',
+  admin: 'Administrador', subadmin: 'Subadministrador', padrino: 'Padrino', digitador: 'Digitador', lider: 'Líder', gestor: 'Gestor',
 }
 
 export default function AccountMenu({ session, collapsed, onLogout }: {

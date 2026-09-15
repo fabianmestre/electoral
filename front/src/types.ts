@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'subadmin' | 'padrino' | 'digitador' | 'lider'
+export type UserRole = 'admin' | 'subadmin' | 'padrino' | 'digitador' | 'lider' | 'gestor'
 export type Permiso = 'conectividad' | 'usuarios' | 'datos' | 'reset'
 export type NivelVoto = 'Firme' | 'Indeciso' | 'En Riesgo'
 export type RolDiaE = 'Votante' | 'Conductor' | 'Testigo electoral'
@@ -252,14 +252,14 @@ export interface SimpatizanteApi {
   telefono: string
   correo: string | null
   direccion: string | null
-  departamento: string
+  departamento: string | null
   municipio: string
   zona: ZonaGeografica | null
   comuna: string | null
   corregimiento: string | null
   barrio: string
-  puesto: string
-  mesa: number
+  puesto: string | null
+  mesa: number | null
   intereses: string[]
   gruposSociales: string[]
   ocupacion: string | null

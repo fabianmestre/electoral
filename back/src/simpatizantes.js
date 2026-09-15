@@ -192,7 +192,7 @@ export function validateVehiculos(input) {
 }
 
 export function canManageSimpatizantes(user) {
-  return user.rol === 'admin' || user.rol === 'padrino' || user.rol === 'digitador' || user.rol === 'lider' || user.permisos.includes('datos')
+  return user.rol === 'admin' || user.rol === 'padrino' || user.rol === 'digitador' || user.rol === 'lider' || user.rol === 'gestor' || user.permisos.includes('datos')
 }
 
 export function serializeVehiculo(row) {

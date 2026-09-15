@@ -27,8 +27,9 @@ export default function SimpatizanteDetalle() {
     })
   }, [simpatizanteDetalleId, cargarSimpatizanteDetalle])
 
-  const puedeEditar = session?.rol === 'admin' || session?.rol === 'padrino'
-  const puesto = p ? buscarPuesto(p.puesto) : undefined
+  const puedeEditar = session?.rol === 'admin' || session?.rol === 'padrino' || session?.rol === 'gestor'
+  const puedeEliminar = session?.rol === 'admin' || session?.rol === 'padrino'
+  const puesto = p?.puesto ? buscarPuesto(p.puesto) : undefined
   const lider = p ? lideresApi.find((l) => l.id === p.liderId) : undefined
 
   const eliminar = async () => {
@@ -89,12 +90,12 @@ export default function SimpatizanteDetalle() {
                 </div>
                 {puedeEditar && (
                   <div className="flex gap-2 shrink-0">
-                    <button
+                    {puedeEliminar && <button
                       onClick={() => openPersona({ mode: 'edit', personaId: p.id })}
                       className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-blue-50 text-blue-700 hover:bg-blue-100"
                     >
                       <Pencil className="w-4 h-4" /> Editar
-                    </button>
+                    </button>}
                     <button
                       onClick={() => void eliminar()}
                       disabled={borrando}

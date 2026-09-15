@@ -93,3 +93,10 @@ nacimiento, zona ni autorización de tratamiento de datos.
 Ejecuta después `back/sql/020_captura_reducida_lider.sql`. El formulario del
 líder omite departamento, lugar de votación y mesa; esos datos quedan pendientes.
 El digitador conserva la captura completa de esos campos.
+
+## Gestores de información
+
+Ejecuta `back/sql/021_gestores.sql`. El administrador puede crear cuentas de
+Gestor con correo y cédula; la cédula es la contraseña inicial. El Gestor entra
+al directorio completo de simpatizantes y puede consultar, completar y editar
+cualquier ficha. No puede eliminar fichas ni acceder a los demás módulos.

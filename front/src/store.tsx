@@ -48,6 +48,7 @@ export type ViewId =
   | 'padrinos'
   | 'simpatizante-detalle'
   | 'gestion-lideres'
+  | 'gestores'
 
 export type ToastType = 'success' | 'info' | 'error' | 'warn'
 
@@ -230,7 +231,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const applySession = (u: Usuario) => {
     setSession(u)
     setPerfilId(null)
-    setView(u.rol === 'admin' ? 'dashboard' : u.rol === 'padrino' ? 'padrino-dash' : u.rol === 'digitador' || u.rol === 'lider' ? 'digitador' : 'comunicaciones')
+    setView(u.rol === 'admin' ? 'dashboard' : u.rol === 'padrino' ? 'padrino-dash' : u.rol === 'digitador' || u.rol === 'lider' ? 'digitador' : u.rol === 'gestor' ? 'directorio' : 'comunicaciones')
   }
 
   const cargarSimpatizantesApi = async () => {
@@ -823,7 +824,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const volver = () => {
     setPerfilId(null)
-    setView(session?.rol === 'admin' ? 'dashboard' : session?.rol === 'padrino' ? 'padrino-dash' : session?.rol === 'digitador' || session?.rol === 'lider' ? 'digitador' : 'comunicaciones')
+    setView(session?.rol === 'admin' ? 'dashboard' : session?.rol === 'padrino' ? 'padrino-dash' : session?.rol === 'digitador' || session?.rol === 'lider' ? 'digitador' : session?.rol === 'gestor' ? 'directorio' : 'comunicaciones')
   }
 
   const openPersona = (m: PersonaModalState) => setPersonaModal(m)

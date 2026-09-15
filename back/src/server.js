@@ -13,6 +13,7 @@ import { canRegistrarActividad, serializeActividad, validateActividad } from './
 import { actualizarPadrinoAdmin, crearPadrinoAdmin, listarPadrinosAdmin, resetClavePadrinoAdmin } from './admin.js'
 import { listarDigitadoresAdmin, crearDigitadorAdmin, actualizarDigitadorAdmin } from './admin.js'
 import { borrarTodosPadrinosAdmin } from './admin.js'
+import { actualizarGestorAdmin, crearGestorAdmin, listarGestoresAdmin } from './admin.js'
 import { validarCapturaPlanilla } from './digitacion-planillas.js'
 
 const port = Number(process.env.PORT || 3002)
@@ -70,6 +71,7 @@ const SIMPATIZANTE_SELECT = '*,simpatizante_vehiculos(*)'
 
 async function crearSimpatizante(request) {
   const { user, token } = await requireUser(request)
+  if (user.rol === 'gestor') throw new ApiError(403, 'El gestor completa fichas existentes; no crea simpatizantes.')
   if (!canManageSimpatizantes(user)) throw new ApiError(403, 'No tienes permiso para registrar simpatizantes.')
   const payload = await body(request)
   if (user.rol === 'digitador' && (typeof payload.planillaCodigo !== 'string' || !payload.planillaCodigo.trim())) {
@@ -188,7 +190,7 @@ async function editarSimpatizante(request, id) {
 
 async function eliminarSimpatizante(request, id) {
   const { user, token } = await requireUser(request)
-  if (user.rol === 'digitador' || user.rol === 'lider') throw new ApiError(403, 'Este rol no puede eliminar simpatizantes.')
+  if (user.rol === 'digitador' || user.rol === 'lider' || user.rol === 'gestor') throw new ApiError(403, 'Este rol no puede eliminar simpatizantes.')
   if (!canManageSimpatizantes(user)) throw new ApiError(403, 'No tienes permiso para eliminar simpatizantes.')
   const deleted = await db.request(`/rest/v1/simpatizantes?id=eq.${encodeURIComponent(id)}`, {
     method: 'DELETE', headers: { Authorization: `Bearer ${token}`, Prefer: 'return=representation' },
@@ -336,6 +338,7 @@ const ACTIVIDAD_SELECT = '*,lider:lideres(id,nombres,apellidos)'
 
 async function registrarVoto(request, id) {
   const { user, token } = await requireUser(request)
+  if (user.rol === 'gestor') throw new ApiError(403, 'El gestor no puede registrar votos.')
   if (!canManageSimpatizantes(user)) throw new ApiError(403, 'No tienes permiso para registrar votos.')
   const headers = { Authorization: `Bearer ${token}`, Prefer: 'return=representation' }
 
@@ -560,6 +563,19 @@ const server = createServer(async (request, response) => {
     if (digitadorMatch && request.method === 'PATCH') {
       await requireAdmin(request)
       return send(200, await actualizarDigitadorAdmin(digitadorMatch[1], await body(request)))
+    }
+    if (pathname === '/api/gestores' && request.method === 'GET') {
+      await requireAdmin(request)
+      return send(200, { items: await listarGestoresAdmin() })
+    }
+    if (pathname === '/api/gestores' && request.method === 'POST') {
+      await requireAdmin(request)
+      return send(201, await crearGestorAdmin(await body(request)))
+    }
+    const gestorMatch = pathname.match(new RegExp(`^/api/gestores/(${UUID_RE})$`))
+    if (gestorMatch && request.method === 'PATCH') {
+      await requireAdmin(request)
+      return send(200, await actualizarGestorAdmin(gestorMatch[1], await body(request)))
     }
 
     if (pathname === '/api/simpatizantes' && request.method === 'POST') {

@@ -175,3 +175,39 @@ export async function actualizarDigitadorAdmin(id, input) {
   if (!rows?.length) throw new ApiError(404, 'Digitador no encontrado.')
   return { id: rows[0].id, activo: rows[0].activo }
 }
+
+export async function listarGestoresAdmin() {
+  const rows = await adminRequest('/rest/v1/users?rol=eq.gestor&select=id,nombre,cedula,activo&order=nombre.asc')
+  return Promise.all(rows.map(async (row) => {
+    const auth = await adminRequest(`/auth/v1/admin/users/${row.id}`)
+    return { ...row, email: auth?.email ?? auth?.user?.email ?? null }
+  }))
+}
+
+export async function crearGestorAdmin(input) {
+  const { nombre, email, cedula } = validarDigitador(input)
+  const auth = await adminRequest('/auth/v1/admin/users', {
+    method: 'POST', body: JSON.stringify({ email, password: cedula, email_confirm: true, user_metadata: { nombre } }),
+  })
+  const id = auth?.id ?? auth?.user?.id
+  if (!id) throw new ApiError(502, 'No se pudo crear la cuenta de acceso.')
+  try {
+    await adminRequest('/rest/v1/users', {
+      method: 'POST', headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ id, nombre, cedula, rol: 'gestor', activo: true }),
+    })
+  } catch (error) {
+    await adminRequest(`/auth/v1/admin/users/${id}`, { method: 'DELETE' }).catch(() => {})
+    throw error
+  }
+  return { id, nombre, email, cedula, activo: true }
+}
+
+export async function actualizarGestorAdmin(id, input) {
+  if (typeof input.activo !== 'boolean') throw new ApiError(422, 'Indica el estado de la cuenta.')
+  const rows = await adminRequest(`/rest/v1/users?id=eq.${encodeURIComponent(id)}&rol=eq.gestor`, {
+    method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ activo: input.activo }),
+  })
+  if (!rows?.length) throw new ApiError(404, 'Gestor no encontrado.')
+  return { id: rows[0].id, activo: rows[0].activo }
+}

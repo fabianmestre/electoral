@@ -88,14 +88,14 @@ function simpatizanteToForm(p: SimpatizanteApi): FormState {
     telefono: p.telefono,
     correo: p.correo ?? '',
     direccion: p.direccion ?? '',
-    departamento: p.departamento,
+    departamento: p.departamento ?? '',
     municipio: p.municipio,
     zona: p.zona ?? 'Urbana',
     comuna: p.comuna ?? '',
     corregimiento: p.corregimiento ?? '',
     barrio: p.barrio,
-    puesto: p.puesto,
-    mesa: String(p.mesa),
+    puesto: p.puesto ?? '',
+    mesa: p.mesa ? String(p.mesa) : '',
     intereses: [...p.intereses],
     gruposSociales: [...p.gruposSociales],
     ocupacion: p.ocupacion ?? '',
@@ -126,7 +126,7 @@ export default function PersonaForm() {
   const [form, setForm] = useState<FormState>(() => emptyForm(''))
   const [hint, setHint] = useState<{ tone: 'ok' | 'warn' | 'err'; text: string } | null>(null)
   const [cargando, setCargando] = useState(false)
-  const lideresDisponibles = session?.rol === 'admin' || session?.rol === 'digitador' ? lideresApi.filter((l) => l.activo) : session?.rol === 'lider' ? lideresApi.filter((l) => l.userId === session.id) : lideresApi.filter((l) => l.padrinoId === session?.id)
+  const lideresDisponibles = session?.rol === 'admin' || session?.rol === 'digitador' || session?.rol === 'gestor' ? lideresApi.filter((l) => l.activo) : session?.rol === 'lider' ? lideresApi.filter((l) => l.userId === session.id) : lideresApi.filter((l) => l.padrinoId === session?.id)
 
   useEffect(() => {
     if (!personaModal) return

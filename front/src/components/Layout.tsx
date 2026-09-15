@@ -41,6 +41,7 @@ import PadrinoSimpatizantes from '../views/PadrinoSimpatizantes'
 import PadrinosAdmin from '../views/PadrinosAdmin'
 import GestionLideres from '../views/GestionLideres'
 import Digitador from '../views/Digitador'
+import GestoresAdmin from '../views/GestoresAdmin'
 import AccountMenu from './AccountMenu'
 
 interface NavItem {
@@ -54,6 +55,7 @@ const NAV: Record<UserRole, NavItem[]> = {
   lider: [{ id: 'digitador', label: 'Mis simpatizantes', sub: 'Registro y actualización de mis fichas', icon: Users }],
   admin: [
     { id: 'digitador', label: 'Digitador', sub: 'Cuentas y captura de planillas', icon: ClipboardList },
+    { id: 'gestores', label: 'Gestores', sub: 'Cuentas para completar fichas', icon: UserCog },
     // { id: 'consulta-puesto', label: 'Consulta puesto', sub: 'Lugar de votación oficial', icon: MapPin },
     { id: 'dashboard', label: 'Dashboard Analítico', sub: 'Métricas globales y legal', icon: LayoutDashboard },
     { id: 'directorio', label: 'Directorio de Simpatizantes', sub: 'Fichas técnicas', icon: Users },
@@ -79,6 +81,7 @@ const NAV: Record<UserRole, NavItem[]> = {
   digitador: [
     { id: 'digitador', label: 'Digitador', sub: 'Captura de simpatizantes y planillas', icon: ClipboardList },
   ],
+  gestor: [{ id: 'directorio', label: 'Simpatizantes', sub: 'Completar y editar fichas', icon: Users }],
 }
 
 const TITLES: Record<ViewId, string> = {
@@ -100,12 +103,15 @@ const TITLES: Record<ViewId, string> = {
   'padrino-simpatizantes': 'Simpatizantes de mis líderes',
   padrinos: 'Gestión de Padrinos',
   'gestion-lideres': 'Líderes',
+  gestores: 'Gestores',
 }
 
 function renderView(view: ViewId) {
   switch (view) {
     case 'digitador':
       return <Digitador />
+    case 'gestores':
+      return <GestoresAdmin />
     case 'consulta-puesto':
       return <ConsultaPuesto />
     case 'dashboard':
@@ -155,7 +161,7 @@ export default function Layout() {
       ? '🌐 Acceso Total'
       : session.rol === 'subadmin'
         ? '🔌 Conectividad y Comunicaciones'
-        : session.rol === 'lider' ? 'Líder' : session.rol === 'digitador' ? 'Digitación de planillas' : `🛡️ ${nombrePadrino(db, session.padrinoId)}`
+        : session.rol === 'lider' ? 'Líder' : session.rol === 'digitador' ? 'Digitación de planillas' : session.rol === 'gestor' ? 'Gestor de fichas' : `🛡️ ${nombrePadrino(db, session.padrinoId)}`
   const zoneTone =
     session.rol === 'admin'
       ? 'bg-blue-100 text-blue-700'

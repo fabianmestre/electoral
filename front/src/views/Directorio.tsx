@@ -104,7 +104,8 @@ export default function Directorio() {
   const [page, setPage] = useState(1)
   const [borrando, setBorrando] = useState(false)
   const [eliminandoId, setEliminandoId] = useState<string | null>(null)
-  const puedeGestionar = session?.rol === 'admin' || session?.rol === 'padrino'
+  const puedeGestionar = session?.rol === 'admin' || session?.rol === 'padrino' || session?.rol === 'gestor'
+  const puedeEliminar = session?.rol === 'admin' || session?.rol === 'padrino'
 
   const eliminarFicha = async (p: { id: string; nombres: string; apellidos: string }) => {
     if (!window.confirm(`¿Eliminar la ficha de ${p.nombres} ${p.apellidos}? Esta acción no se puede deshacer.`)) return
@@ -300,9 +301,9 @@ export default function Directorio() {
             <Trash2 className="w-4 h-4" /> {borrando ? 'Borrando…' : 'Borrar todos'}
           </button>
         )}
-        <button onClick={() => openPersona({ mode: 'new' })} className="ml-auto inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700">
+        {session?.rol !== 'gestor' && <button onClick={() => openPersona({ mode: 'new' })} className="ml-auto inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700">
           <Plus className="w-4 h-4" /> Nueva ficha
-        </button>
+        </button>}
       </div>
 
       {/* Chips de filtros activos */}
@@ -576,13 +577,13 @@ export default function Directorio() {
                       </button>
                       {puedeGestionar && (
                         <>
-                          <button
+                          {puedeEliminar && <button
                             onClick={() => openPersona({ mode: 'edit', personaId: p.id })}
                             title="Editar ficha"
                             className="p-1 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-blue-600"
                           >
                             <Pencil className="w-3.5 h-3.5" />
-                          </button>
+                          </button>}
                           <button
                             onClick={() => void eliminarFicha(p)}
                             disabled={eliminandoId === p.id}
