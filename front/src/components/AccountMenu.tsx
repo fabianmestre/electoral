@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import { ChevronUp, KeyRound, LogOut } from 'lucide-react'
+import { ChevronUp, LogOut } from 'lucide-react'
 import type { Usuario, UserRole } from '../types'
 
 const ROLES: Record<UserRole, string> = {
   admin: 'Administrador', subadmin: 'Subadministrador', padrino: 'Padrino', digitador: 'Digitador', lider: 'Líder',
 }
 
-export default function AccountMenu({ session, collapsed, onPassword, onLogout }: {
-  session: Usuario; collapsed: boolean; onPassword: () => void; onLogout: () => void
+export default function AccountMenu({ session, collapsed, onLogout }: {
+  session: Usuario; collapsed: boolean; onLogout: () => void
 }) {
   const [open, setOpen] = useState(false)
   const container = useRef<HTMLDivElement>(null)
@@ -40,11 +40,8 @@ export default function AccountMenu({ session, collapsed, onPassword, onLogout }
           <p className="text-xs text-slate-400 truncate" title={session.email}>{session.email}</p>
           <p className="text-xs text-slate-400 mt-1">{ROLES[session.rol]}</p>
         </div>
-        <button type="button" onClick={() => { setOpen(false); onPassword() }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
-          <KeyRound className="h-4 w-4" /> Contraseña
-        </button>
         <button type="button" onClick={() => { setOpen(false); onLogout() }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
-          <LogOut className="h-4 w-4" /> Cambiar usuario
+          <LogOut className="h-4 w-4" /> Cerrar sesión
         </button>
       </div>}
       <button ref={trigger} type="button" aria-expanded={open} aria-controls={open ? 'sidebar-account-options' : undefined} aria-label={`Cuenta de ${session.nombre}`} title={collapsed ? session.nombre : undefined} onClick={() => setOpen((value) => !value)} className={`flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${open ? 'bg-slate-800' : ''} ${collapsed ? 'lg:justify-center lg:px-0' : ''}`}>

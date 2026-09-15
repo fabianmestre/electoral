@@ -35,7 +35,6 @@ import Legal from '../views/Legal'
 import ConsultaPuesto from '../views/ConsultaPuesto'
 import Perfil from './Perfil'
 import SimpatizanteDetalle from '../views/SimpatizanteDetalle'
-import CambiarPass from './CambiarPass'
 import PadrinoDash from '../views/PadrinoDash'
 import PadrinoPlanillas from '../views/PadrinoPlanillas'
 import PadrinoSimpatizantes from '../views/PadrinoSimpatizantes'
@@ -148,7 +147,6 @@ export default function Layout() {
   const { db, session, view, navigate, logout, resetDatos } = useApp()
   const [open, setOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
-  const [showPass, setShowPass] = useState(false)
   if (!session) return null
   const items = NAV[session.rol]
 
@@ -219,7 +217,7 @@ export default function Layout() {
             <RotateCcw className="w-3.5 h-3.5 shrink-0" />
             <span className={collapsed ? 'lg:hidden' : ''}>Restablecer datos de prueba</span>
           </button>
-          <AccountMenu session={session} collapsed={collapsed} onPassword={() => { setShowPass(true); setOpen(false) }} onLogout={logout} />
+          <AccountMenu session={session} collapsed={collapsed} onLogout={logout} />
         </div>
       </aside>
 
@@ -252,7 +250,6 @@ export default function Layout() {
           </div>
         </main>
       </div>
-      <CambiarPass open={showPass} userId={session.id} nombre={session.nombre} onClose={() => setShowPass(false)} />
     </div>
   )
 }
