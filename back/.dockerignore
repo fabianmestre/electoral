@@ -1,0 +1,6 @@
+.env
+.env.*
+!.env.example
+sql
+**/*.test.js
+npm-debug.log*

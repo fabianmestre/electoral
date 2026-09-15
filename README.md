@@ -39,6 +39,20 @@ Ejecuta `back/sql/001_users.sql` y después `back/sql/002_seed_users.sql` en Sup
 El segundo script crea las cinco cuentas iniciales con contraseña `123456`.
 Los demás módulos del frontend todavía usan sus datos locales.
 
+## Despliegue con Docker
+
+Copia `.env.docker.example` como `.env` en la raíz y completa las tres variables
+de Supabase. Después construye e inicia ambos contenedores:
+
+```bash
+docker compose up -d --build
+```
+
+La aplicación queda disponible en `http://localhost:3001`. Puedes cambiar el
+puerto publicado con `APP_PORT`. Nginx sirve el frontend y envía `/api` al
+backend por la red interna de Compose. Para revisar el estado usa
+`docker compose ps` y para detener el despliegue `docker compose down`.
+
 ## Digitadores
 
 Ejecuta `back/sql/013_digitadores.sql` después de las migraciones anteriores.
