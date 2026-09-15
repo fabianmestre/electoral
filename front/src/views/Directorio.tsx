@@ -577,21 +577,21 @@ export default function Directorio() {
                       </button>
                       {puedeGestionar && (
                         <>
-                          {puedeEliminar && <button
-                            onClick={() => openPersona({ mode: 'edit', personaId: p.id })}
-                            title="Editar ficha"
-                            className="p-1 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-blue-600"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>}
                           <button
+                            onClick={() => openPersona({ mode: 'edit', personaId: p.id })}
+                            title={session?.rol === 'gestor' ? 'Completar o editar ficha' : 'Editar ficha'}
+                            className={session?.rol === 'gestor' ? 'rounded-lg bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100' : 'p-1 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-blue-600'}
+                          >
+                            {session?.rol === 'gestor' ? 'Completar' : <Pencil className="w-3.5 h-3.5" />}
+                          </button>
+                          {puedeEliminar && <button
                             onClick={() => void eliminarFicha(p)}
                             disabled={eliminandoId === p.id}
                             title="Eliminar ficha"
                             className="p-1 rounded-lg text-slate-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          </button>}
                         </>
                       )}
                     </div>

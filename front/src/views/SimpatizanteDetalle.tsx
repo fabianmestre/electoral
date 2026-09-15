@@ -90,19 +90,19 @@ export default function SimpatizanteDetalle() {
                 </div>
                 {puedeEditar && (
                   <div className="flex gap-2 shrink-0">
-                    {puedeEliminar && <button
+                    <button
                       onClick={() => openPersona({ mode: 'edit', personaId: p.id })}
                       className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-blue-50 text-blue-700 hover:bg-blue-100"
                     >
-                      <Pencil className="w-4 h-4" /> Editar
-                    </button>}
-                    <button
+                      <Pencil className="w-4 h-4" /> {session?.rol === 'gestor' ? 'Completar / editar' : 'Editar'}
+                    </button>
+                    {puedeEliminar && <button
                       onClick={() => void eliminar()}
                       disabled={borrando}
                       className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Trash2 className="w-4 h-4" /> {borrando ? 'Eliminando…' : 'Eliminar'}
-                    </button>
+                    </button>}
                   </div>
                 )}
               </div>
