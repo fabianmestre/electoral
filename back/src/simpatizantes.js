@@ -2,6 +2,7 @@ import { ApiError } from './api-error.js'
 
 const columns = {
   nombres: 'nombres',
+  planillaCodigo: 'planilla_codigo',
   apellidos: 'apellidos',
   cedula: 'cedula',
   fechaNacimiento: 'fecha_nacimiento',
@@ -30,6 +31,7 @@ const columns = {
 }
 
 const textLimits = {
+  planillaCodigo: 80,
   nombres: 100, apellidos: 100, direccion: 300, departamento: 100, municipio: 100,
   comuna: 100, corregimiento: 100, barrio: 150, puesto: 150, ocupacion: 100,
   profesion: 100, observacion: 1000,
@@ -131,7 +133,7 @@ export function validateSimpatizante(input, { partial = false } = {}) {
     }
 
     // Campos de texto libre (algunos opcionales)
-    const nullable = ['correo', 'direccion', 'comuna', 'corregimiento', 'ocupacion', 'profesion', 'observacion']
+    const nullable = ['correo', 'direccion', 'comuna', 'corregimiento', 'ocupacion', 'profesion', 'observacion', 'planillaCodigo']
     if (value === null && nullable.includes(field)) {
       result[column] = null
       continue
@@ -190,7 +192,7 @@ export function validateVehiculos(input) {
 }
 
 export function canManageSimpatizantes(user) {
-  return user.rol === 'admin' || user.rol === 'padrino' || user.permisos.includes('datos')
+  return user.rol === 'admin' || user.rol === 'padrino' || user.rol === 'digitador' || user.rol === 'lider' || user.permisos.includes('datos')
 }
 
 export function serializeVehiculo(row) {
@@ -205,6 +207,12 @@ export function serializeVehiculo(row) {
 
 export function serializeSimpatizante(row) {
   return {
+    numeroPlanilla: row.numero_planilla ?? null,
+    nombreCompletoOriginal: row.nombre_completo_original ?? null,
+    tieneVehiculo: row.tiene_vehiculo ?? null,
+    tipoVehiculoPlanilla: row.tipo_vehiculo_planilla ?? null,
+    trazabilidad: row.trazabilidad ?? null,
+    planillaCodigo: row.planilla_codigo ?? null,
     id: row.id,
     nombres: row.nombres,
     apellidos: row.apellidos,

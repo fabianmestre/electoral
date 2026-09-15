@@ -18,8 +18,8 @@ function estadoLiderTone(cumplida: boolean, pctMeta: number): string {
 
 const nombreCorto = (l: { nombres: string }) => l.nombres.split(' ')[0]
 
-const lugarDe = (p: { zona: string; comuna?: string | null; corregimiento?: string | null }) =>
-  p.zona === 'Urbana' ? (p.comuna ?? '?') : (p.corregimiento ?? '?')
+const lugarDe = (p: { zona: string | null; comuna?: string | null; corregimiento?: string | null }) =>
+  p.zona === 'Urbana' ? (p.comuna ?? '?') : p.zona === 'Rural' ? (p.corregimiento ?? '?') : 'Por confirmar'
 
 const horaCorta = (iso: string) => new Date(iso).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
 

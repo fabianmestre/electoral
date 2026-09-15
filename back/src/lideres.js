@@ -4,6 +4,7 @@ const columns = {
   nombres: 'nombres',
   apellidos: 'apellidos',
   cedula: 'cedula',
+  correo: 'correo',
   meta: 'meta',
   territorio: 'territorio',
   rolDiaE: 'rol_dia_e',
@@ -11,7 +12,7 @@ const columns = {
   activo: 'activo',
 }
 
-const requiredOnCreate = ['nombres', 'apellidos', 'cedula', 'padrinoId']
+const requiredOnCreate = ['nombres', 'apellidos', 'cedula', 'correo', 'padrinoId']
 const ROLES_DIA_E = ['Votante', 'Conductor', 'Testigo electoral']
 
 function isUuid(value) {
@@ -35,6 +36,11 @@ export function validateLider(input, { partial = false } = {}) {
       continue
     }
     const value = input[field]
+    if (field === 'correo') {
+      if (typeof value !== 'string' || value.trim().length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) errors[field] = 'Ingresa un correo válido.'
+      else result[column] = value.trim().toLowerCase()
+      continue
+    }
 
     if (field === 'meta') {
       const n = Number(value)
@@ -94,6 +100,8 @@ export function serializeLider(row) {
     nombres: row.nombres,
     apellidos: row.apellidos,
     cedula: row.cedula,
+    correo: row.correo ?? null,
+    userId: row.user_id ?? null,
     meta: row.meta,
     territorio: row.territorio,
     rolDiaE: row.rol_dia_e,

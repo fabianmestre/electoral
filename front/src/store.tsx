@@ -18,6 +18,7 @@ import type {
   LiderApi,
   LiderApiInput,
   PadrinoApi,
+  PadrinoApiInput,
   PadrinoInfo,
   PersonaInput,
   SimpatizanteApi,
@@ -29,6 +30,7 @@ import { hoyISO, uid } from './lib'
 import { restaurarSesion } from './authSession'
 
 export type ViewId =
+  | 'digitador'
   | 'consulta-puesto'
   | 'dashboard'
   | 'lideres'
@@ -94,6 +96,7 @@ interface AppContextValue {
   resetDatos: () => void
   simpatizantesApi: SimpatizanteApi[]
   usuariosApi: UsuarioApi[]
+  cargarUsuariosApi: () => Promise<void>
   cargandoSimpatizantes: boolean
   cargarSimpatizantesApi: () => Promise<void>
   cargarSimpatizanteDetalle: (id: string) => Promise<SimpatizanteApi | null>
@@ -110,7 +113,7 @@ interface AppContextValue {
   padrinosApi: PadrinoApi[]
   cargandoPadrinos: boolean
   cargarPadrinosApi: () => Promise<void>
-  crearPadrinoApi: (datos: { nombre: string; cedula?: string; sector?: string }) => Promise<{ email: string; password: string } | null>
+  crearPadrinoApi: (datos: PadrinoApiInput) => Promise<{ email: string | null; password: string | null } | null>
   editarPadrinoApi: (id: string, datos: Partial<{ nombre: string; cedula: string | null; sector: string | null; activo: boolean }>) => Promise<boolean>
   resetClavePadrinoApi: (id: string) => Promise<string | null>
   gestionesApi: GestionApi[]
@@ -227,7 +230,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const applySession = (u: Usuario) => {
     setSession(u)
     setPerfilId(null)
-    setView(u.rol === 'admin' ? 'dashboard' : u.rol === 'padrino' ? 'padrino-dash' : 'comunicaciones')
+    setView(u.rol === 'admin' ? 'dashboard' : u.rol === 'padrino' ? 'padrino-dash' : u.rol === 'digitador' || u.rol === 'lider' ? 'digitador' : 'comunicaciones')
   }
 
   const cargarSimpatizantesApi = async () => {
@@ -357,7 +360,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const crearPadrinoApi = async (datos: { nombre: string; cedula?: string; sector?: string }) => {
+  const crearPadrinoApi = async (datos: PadrinoApiInput) => {
     const token = sessionStorage.getItem('electoral.auth.token')
     if (!token) {
       notify('Inicia sesión de nuevo para continuar', 'error')
@@ -820,7 +823,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const volver = () => {
     setPerfilId(null)
-    setView(session?.rol === 'admin' ? 'dashboard' : session?.rol === 'padrino' ? 'padrino-dash' : 'comunicaciones')
+    setView(session?.rol === 'admin' ? 'dashboard' : session?.rol === 'padrino' ? 'padrino-dash' : session?.rol === 'digitador' || session?.rol === 'lider' ? 'digitador' : 'comunicaciones')
   }
 
   const openPersona = (m: PersonaModalState) => setPersonaModal(m)
@@ -858,6 +861,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       posgrado: datos.posgrado,
       observacion: datos.observacion || null,
       liderId: datos.liderId,
+      planillaCodigo: datos.planillaCodigo || null,
       nivelVoto: datos.nivelVoto,
       rolDiaE: datos.rolDiaE,
       habeasData: datos.habeasData,
@@ -1009,6 +1013,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       resetDatos,
       simpatizantesApi,
       usuariosApi,
+      cargarUsuariosApi,
       cargandoSimpatizantes,
       cargarSimpatizantesApi,
       cargarSimpatizanteDetalle,

@@ -56,6 +56,14 @@ export default function SimpatizanteDetalle() {
       {!cargando && p && (
         <div className="grid lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2 space-y-4">
+            {p.trazabilidad && <Card title="Origen del registro">
+              <dl className="grid sm:grid-cols-2 gap-3 text-sm">
+                <div><dt className="text-xs text-slate-500">Registrado por</dt><dd>{p.trazabilidad.registradoPor.nombre} ({p.trazabilidad.registradoPor.rol})</dd></div>
+                <div><dt className="text-xs text-slate-500">Fecha de registro</dt><dd>{fmtFecha(p.trazabilidad.fecha)}</dd></div>
+                <div><dt className="text-xs text-slate-500">Líder al registrar</dt><dd>{p.trazabilidad.lider.nombre}</dd></div>
+                <div><dt className="text-xs text-slate-500">Padrino al registrar</dt><dd>{p.trazabilidad.padrino.nombre}</dd></div>
+              </dl>
+            </Card>}
             <Card>
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-4">
@@ -67,7 +75,7 @@ export default function SimpatizanteDetalle() {
                       {p.nombres} {p.apellidos}
                     </h2>
                     <div className="text-sm text-slate-500">
-                      CC {p.cedula} · {edad(p.fechaNacimiento)} años · {p.ocupacion || 'Sin ocupación registrada'}
+                      CC {p.cedula} · {p.fechaNacimiento ? `${edad(p.fechaNacimiento)} años` : 'Edad pendiente'} · {p.ocupacion || 'Sin ocupación registrada'}
                     </div>
                     <div className="flex flex-wrap gap-2 mt-2">
                       <Badge className={validezTone(validezDeApi(p))}>{validezLabel(validezDeApi(p))}</Badge>
@@ -103,7 +111,7 @@ export default function SimpatizanteDetalle() {
               <dl className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
                 <div><dt className="text-slate-400 text-xs">Departamento</dt><dd className="text-slate-800">{p.departamento}</dd></div>
                 <div><dt className="text-slate-400 text-xs">Municipio</dt><dd className="text-slate-800">{p.municipio}</dd></div>
-                <div><dt className="text-slate-400 text-xs">Zona</dt><dd className="text-slate-800">{p.zona}</dd></div>
+                <div><dt className="text-slate-400 text-xs">Zona</dt><dd className="text-slate-800">{p.zona || 'Por confirmar'}</dd></div>
                 <div>
                   <dt className="text-slate-400 text-xs">{p.zona === 'Urbana' ? 'Comuna' : 'Corregimiento'}</dt>
                   <dd className="text-slate-800">{(p.zona === 'Urbana' ? p.comuna : p.corregimiento) || '—'}</dd>
@@ -116,7 +124,7 @@ export default function SimpatizanteDetalle() {
 
             <Card title="Datos personales">
               <dl className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
-                <div><dt className="text-slate-400 text-xs">Fecha de nacimiento</dt><dd className="text-slate-800">{fmtFecha(p.fechaNacimiento)}</dd></div>
+                <div><dt className="text-slate-400 text-xs">Fecha de nacimiento</dt><dd className="text-slate-800">{p.fechaNacimiento ? fmtFecha(p.fechaNacimiento) : 'Pendiente'}</dd></div>
                 <div><dt className="text-slate-400 text-xs">Teléfono / WhatsApp</dt><dd className="text-slate-800">{p.telefono}</dd></div>
                 <div><dt className="text-slate-400 text-xs">Correo</dt><dd className="text-slate-800">{p.correo || '—'}</dd></div>
                 <div className="col-span-2 sm:col-span-3"><dt className="text-slate-400 text-xs">Dirección residencial</dt><dd className="text-slate-800">{p.direccion || '—'}</dd></div>

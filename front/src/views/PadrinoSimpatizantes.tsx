@@ -1,25 +1,24 @@
 import { useMemo, useState } from 'react'
 import { Plus, Search } from 'lucide-react'
 import { useApp } from '../store'
-import { lideresDePadrino, nombreLider } from '../data'
 import { Badge, nivelTone } from '../components/ui'
 
 export default function PadrinoSimpatizantes() {
-  const { db, session, verPerfil, openGestion } = useApp()
+  const { simpatizantesApi, lideresApi, session, openPersona } = useApp()
   const [q, setQ] = useState('')
-  const pid = session?.padrinoId ?? ''
+  const pid = session?.id ?? ''
 
-  const lideres = useMemo(() => lideresDePadrino(db, pid), [db, pid])
+  const lideres = useMemo(() => lideresApi.filter((l) => l.padrinoId === pid), [lideresApi, pid])
   const ids = useMemo(() => new Set(lideres.map((l) => l.id)), [lideres])
 
   const personas = useMemo(() => {
-    let l = db.personas.filter((p) => p.liderId && ids.has(p.liderId))
+    let l = simpatizantesApi.filter((p) => p.liderId && ids.has(p.liderId))
     if (q.trim()) {
       const s = q.trim().toLowerCase()
       l = l.filter((p) => `${p.nombres} ${p.apellidos} ${p.cedula} ${p.barrio} ${p.telefono}`.toLowerCase().includes(s))
     }
     return l.sort((a, b) => a.nombres.localeCompare(b.nombres))
-  }, [db, ids, q])
+  }, [simpatizantesApi, ids, q])
 
   return (
     <div>
@@ -56,12 +55,12 @@ export default function PadrinoSimpatizantes() {
               {personas.map((p) => (
                 <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className="px-3 py-2.5 text-sm">
-                    <button onClick={() => verPerfil(p.id)} className="text-left font-medium text-blue-600 hover:underline">
+                    <button onClick={() => openPersona({ mode: 'edit', personaId: p.id })} className="text-left font-medium text-blue-600 hover:underline">
                       {p.nombres} {p.apellidos}
                     </button>
                   </td>
                   <td className="px-3 py-2.5 font-mono text-slate-600 text-sm">{p.cedula}</td>
-                  <td className="px-3 py-2.5 text-sm text-slate-600">{nombreLider(p.liderId)}</td>
+                  <td className="px-3 py-2.5 text-sm text-slate-600">{lideres.find((l) => l.id === p.liderId)?.nombres || '—'}</td>
                   <td className="px-3 py-2.5 text-sm text-slate-600">{p.barrio}</td>
                   <td className="px-3 py-2.5">
                     <Badge className={nivelTone(p.nivelVoto)}>{p.nivelVoto}</Badge>
@@ -76,10 +75,10 @@ export default function PadrinoSimpatizantes() {
                   </td>
                   <td className="px-3 py-2.5">
                     <button
-                      onClick={() => openGestion({ mode: 'new', personaId: p.id })}
+                      onClick={() => openPersona({ mode: 'edit', personaId: p.id })}
                       className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:underline whitespace-nowrap"
                     >
-                      <Plus className="w-3.5 h-3.5" /> Gestión
+                      <Plus className="w-3.5 h-3.5" /> Completar ficha
                     </button>
                   </td>
                 </tr>

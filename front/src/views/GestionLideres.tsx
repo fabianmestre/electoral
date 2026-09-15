@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Pencil, Plus, Trash2, Users } from 'lucide-react'
 import { useApp } from '../store'
-import type { LiderApi, LiderApiInput, RolDiaE } from '../types'
+import type { LiderApi, LiderApiInput } from '../types'
 import { Badge, Field, Modal, inputCls } from '../components/ui'
+import DeleteAllButton from '../components/DeleteAllButton'
 
 interface FormState {
   nombres: string
   apellidos: string
   cedula: string
-  meta: string
-  territorio: string
-  rolDiaE: RolDiaE
+  correo: string
   padrinoId: string
   activo: boolean
 }
@@ -19,9 +18,7 @@ const emptyForm = (padrinoId: string): FormState => ({
   nombres: '',
   apellidos: '',
   cedula: '',
-  meta: '0',
-  territorio: '',
-  rolDiaE: 'Votante',
+  correo: '',
   padrinoId,
   activo: true,
 })
@@ -30,9 +27,7 @@ const liderToForm = (l: LiderApi): FormState => ({
   nombres: l.nombres,
   apellidos: l.apellidos,
   cedula: l.cedula,
-  meta: String(l.meta),
-  territorio: l.territorio ?? '',
-  rolDiaE: l.rolDiaE,
+  correo: l.correo ?? '',
   padrinoId: l.padrinoId,
   activo: l.activo,
 })
@@ -67,6 +62,7 @@ export default function GestionLideres() {
   const cerrar = () => setModal(null)
 
   const guardar = async () => {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.correo.trim())) { notify('Ingresa un correo válido para el líder', 'error'); return }
     if (!form.nombres.trim() || !form.apellidos.trim() || !form.cedula.trim()) {
       notify('Completa nombres, apellidos y cédula', 'error')
       return
@@ -79,9 +75,10 @@ export default function GestionLideres() {
       nombres: form.nombres.trim(),
       apellidos: form.apellidos.trim(),
       cedula: form.cedula.trim(),
-      meta: Number(form.meta) || 0,
-      territorio: form.territorio.trim() || null,
-      rolDiaE: form.rolDiaE,
+      correo: form.correo.trim(),
+      meta: lideresApi.find((l) => l.id === modal?.liderId)?.meta ?? 0,
+      territorio: lideresApi.find((l) => l.id === modal?.liderId)?.territorio ?? null,
+      rolDiaE: lideresApi.find((l) => l.id === modal?.liderId)?.rolDiaE ?? 'Votante',
       padrinoId: form.padrinoId,
       activo: form.activo,
     }
@@ -114,6 +111,8 @@ export default function GestionLideres() {
         <p className="text-sm text-slate-500">
           Líderes de campaña, cada uno apadrinado por un miembro del equipo. {lideresApi.length} registrados.
         </p>
+        <div className="flex flex-wrap gap-2">
+        <DeleteAllButton resource="lideres" count={lideresApi.length} disabled={cargandoLideres || guardando || !!eliminandoId} onDeleted={cargarLideresApi} />
         <button
           onClick={abrirNuevo}
           disabled={padrinos.length === 0}
@@ -122,6 +121,7 @@ export default function GestionLideres() {
         >
           <Plus className="w-4 h-4" /> Nuevo líder
         </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -129,7 +129,7 @@ export default function GestionLideres() {
           <table className="w-full min-w-[900px] text-left">
             <thead className="bg-slate-50">
               <tr>
-                {['Líder', 'Cédula', 'Meta', 'Territorio', 'Rol Día E', 'Padrino', 'Estado', 'Acciones'].map((h) => (
+                {['Líder', 'Correo', 'Cédula', 'Padrino', 'Estado', 'Acciones'].map((h) => (
                   <th key={h} className="text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500 px-2.5 py-2 border-b border-slate-200 whitespace-nowrap">
                     {h}
                   </th>
@@ -139,7 +139,7 @@ export default function GestionLideres() {
             <tbody>
               {lideresOrdenados.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-2.5 py-10 text-slate-400 text-xs text-center">
+                  <td colSpan={6} className="px-2.5 py-10 text-slate-400 text-xs text-center">
                     {cargandoLideres ? 'Cargando líderes…' : 'Sin líderes registrados todavía.'}
                   </td>
                 </tr>
@@ -147,10 +147,8 @@ export default function GestionLideres() {
               {lideresOrdenados.map((l) => (
                 <tr key={l.id} className="hover:bg-slate-50 border-b border-slate-100">
                   <td className="px-2.5 py-1.5 text-xs font-medium text-slate-800 whitespace-nowrap">{l.nombres} {l.apellidos}</td>
+                  <td className="px-2.5 py-1.5 text-xs text-slate-600">{l.correo || '—'}</td>
                   <td className="px-2.5 py-1.5 font-mono text-slate-600 text-xs whitespace-nowrap">{l.cedula}</td>
-                  <td className="px-2.5 py-1.5 text-xs text-slate-600 whitespace-nowrap">{l.meta}</td>
-                  <td className="px-2.5 py-1.5 text-xs text-slate-600">{l.territorio || '—'}</td>
-                  <td className="px-2.5 py-1.5 text-xs text-slate-600 whitespace-nowrap">{l.rolDiaE}</td>
                   <td className="px-2.5 py-1.5 text-xs text-slate-600 whitespace-nowrap">{nombrePadrino(l.padrinoId)}</td>
                   <td className="px-2.5 py-1.5 whitespace-nowrap">
                     <Badge className={l.activo ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}>
@@ -219,18 +217,9 @@ export default function GestionLideres() {
           <Field label="Cédula" required>
             <input className={`${inputCls} font-mono`} value={form.cedula} onChange={(e) => patch({ cedula: e.target.value })} placeholder="Ej: 1111000001" maxLength={10} />
           </Field>
-          <Field label="Meta de votos">
-            <input type="number" min={0} className={inputCls} value={form.meta} onChange={(e) => patch({ meta: e.target.value })} />
-          </Field>
-          <Field label="Territorio" className="sm:col-span-2">
-            <input className={inputCls} value={form.territorio} onChange={(e) => patch({ territorio: e.target.value })} placeholder="Ej: Comunas 1–2 · Valledupar" />
-          </Field>
-          <Field label="Rol asignado Día E">
-            <select className={inputCls} value={form.rolDiaE} onChange={(e) => patch({ rolDiaE: e.target.value as RolDiaE })}>
-              <option>Votante</option>
-              <option>Conductor</option>
-              <option>Testigo electoral</option>
-            </select>
+          <Field label="Correo" required>
+            <input type="email" maxLength={254} className={inputCls} value={form.correo} onChange={(e) => patch({ correo: e.target.value })} />
+            <p className="mt-1 text-xs text-slate-500">Contraseña inicial: la cédula.</p>
           </Field>
           <Field label="Padrino asignado" required>
             <select className={inputCls} value={form.padrinoId} onChange={(e) => patch({ padrinoId: e.target.value })}>

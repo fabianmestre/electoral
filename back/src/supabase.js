@@ -22,6 +22,7 @@ export function createSupabaseClient({ url, key, fetchImpl = fetch }) {
       throw new ApiError(503, 'Falta crear la tabla en Supabase. Ejecuta el script SQL correspondiente.')
     }
     if (data?.code === '23505') throw new ApiError(409, 'Ya existe un registro con esos datos.')
+    if (data?.code === '23503') throw new ApiError(409, 'No se puede borrar: existen registros asociados. Reasigna o elimina esos datos primero.')
     if (['23514', '23502', '22001', '22007', '22P02'].includes(data?.code)) {
       throw new ApiError(422, 'Los datos no cumplen las validaciones de la tabla.')
     }
@@ -41,7 +42,7 @@ export function createSupabaseClient({ url, key, fetchImpl = fetch }) {
     const auth = await request('/auth/v1/user', { headers })
     const rows = await request(`/rest/v1/users?id=eq.${encodeURIComponent(auth.id)}&select=id,nombre,rol,permisos,padrino_id,activo`, { headers })
     const user = rows?.[0]
-    if (!user?.activo || !['admin', 'subadmin', 'padrino'].includes(user.rol)) {
+    if (!user?.activo || !['admin', 'subadmin', 'padrino', 'digitador', 'lider'].includes(user.rol)) {
       throw new ApiError(403, 'La cuenta no tiene un perfil activo.')
     }
     return {

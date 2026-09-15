@@ -45,6 +45,7 @@ interface FormState {
   nivelVoto: NivelVoto
   rolDiaE: RolDiaE
   habeasData: boolean
+  planillaCodigo: string
 }
 
 const emptyForm = (liderId: string): FormState => ({
@@ -75,6 +76,7 @@ const emptyForm = (liderId: string): FormState => ({
   nivelVoto: 'Firme',
   rolDiaE: 'Votante',
   habeasData: false,
+  planillaCodigo: '',
 })
 
 function simpatizanteToForm(p: SimpatizanteApi): FormState {
@@ -82,13 +84,13 @@ function simpatizanteToForm(p: SimpatizanteApi): FormState {
     nombres: p.nombres,
     apellidos: p.apellidos,
     cedula: p.cedula,
-    fechaNacimiento: p.fechaNacimiento,
+    fechaNacimiento: p.fechaNacimiento ?? '',
     telefono: p.telefono,
     correo: p.correo ?? '',
     direccion: p.direccion ?? '',
     departamento: p.departamento,
     municipio: p.municipio,
-    zona: p.zona,
+    zona: p.zona ?? 'Urbana',
     comuna: p.comuna ?? '',
     corregimiento: p.corregimiento ?? '',
     barrio: p.barrio,
@@ -106,6 +108,7 @@ function simpatizanteToForm(p: SimpatizanteApi): FormState {
     nivelVoto: p.nivelVoto,
     rolDiaE: p.rolDiaE,
     habeasData: p.habeasData,
+    planillaCodigo: p.planillaCodigo ?? '',
   }
 }
 
@@ -123,7 +126,7 @@ export default function PersonaForm() {
   const [form, setForm] = useState<FormState>(() => emptyForm(''))
   const [hint, setHint] = useState<{ tone: 'ok' | 'warn' | 'err'; text: string } | null>(null)
   const [cargando, setCargando] = useState(false)
-  const lideresDisponibles = session?.rol === 'admin' ? lideresApi : lideresApi.filter((l) => l.padrinoId === session?.id)
+  const lideresDisponibles = session?.rol === 'admin' || session?.rol === 'digitador' ? lideresApi.filter((l) => l.activo) : session?.rol === 'lider' ? lideresApi.filter((l) => l.userId === session.id) : lideresApi.filter((l) => l.padrinoId === session?.id)
 
   useEffect(() => {
     if (!personaModal) return
@@ -246,6 +249,10 @@ export default function PersonaForm() {
       : { tone: 'err' as const, text: '🔴 Otro departamento: esta persona NO vota en el Concejo de Valledupar.' }
 
   const save = async () => {
+    if (session?.rol === 'digitador' && !form.planillaCodigo.trim()) {
+      notify('Ingresa el código de la planilla que estás digitando', 'error')
+      return
+    }
     if (!form.nombres.trim() || !form.apellidos.trim() || !form.cedula.trim() || !form.fechaNacimiento || !form.telefono.trim()) {
       notify('Completa los datos personales obligatorios', 'error')
       return
@@ -263,6 +270,7 @@ export default function PersonaForm() {
       return
     }
     const input: PersonaInput = {
+      planillaCodigo: form.planillaCodigo.trim() || undefined,
       nombres: form.nombres.trim(),
       apellidos: form.apellidos.trim(),
       cedula: form.cedula.trim(),
@@ -307,7 +315,7 @@ export default function PersonaForm() {
         : `${form.nombres} ${form.apellidos} · CC ${form.cedula}`
       : session?.rol === 'admin'
         ? 'Registro completo de simpatizante / líder'
-        : `Líder asignado: ${session?.nombre}`
+        : 'Selecciona el líder al que pertenece el simpatizante'
 
   const comunas = comunasDe(form.municipio)
   const corregimientos = corregimientosDe(form.municipio)
@@ -587,6 +595,9 @@ export default function PersonaForm() {
 
         {/* 4 Vinculación */}
         <div>
+          <Field label="Código de planilla" required={session?.rol === 'digitador'}>
+            <input className={inputCls} maxLength={80} value={form.planillaCodigo} onChange={(e) => patch({ planillaCodigo: e.target.value })} placeholder="Código de la planilla física" />
+          </Field>
           <h4 className="text-xs font-bold uppercase tracking-wider text-blue-700 mb-2">4 · Vinculación y Compromiso</h4>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Field label="Líder asignado" required>

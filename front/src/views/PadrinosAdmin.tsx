@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useApp } from '../store'
 import { Badge, Card, Modal } from '../components/ui'
 import type { PadrinoApi } from '../types'
+import DeleteAllButton from '../components/DeleteAllButton'
 
 const inputCls2 = 'border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-500'
 
@@ -12,11 +13,16 @@ interface Credenciales {
 }
 
 export default function PadrinosAdmin() {
-  const { padrinosApi, cargandoPadrinos, cargarPadrinosApi, crearPadrinoApi, editarPadrinoApi, resetClavePadrinoApi, lideresApi } = useApp()
+  const { padrinosApi, cargandoPadrinos, cargarPadrinosApi, crearPadrinoApi, editarPadrinoApi, resetClavePadrinoApi, lideresApi, cargarUsuariosApi } = useApp()
 
   const [staffNombre, setStaffNombre] = useState('')
+  const [staffEmail, setStaffEmail] = useState('')
   const [staffCedula, setStaffCedula] = useState('')
   const [staffSector, setStaffSector] = useState('')
+  const [staffNumero, setStaffNumero] = useState('')
+  const [staffCelular, setStaffCelular] = useState('')
+  const [staffDireccion, setStaffDireccion] = useState('')
+  const [staffBarrio, setStaffBarrio] = useState('')
   const [creando, setCreando] = useState(false)
   const [nuevoOpen, setNuevoOpen] = useState(false)
   const [credenciales, setCredenciales] = useState<Credenciales | null>(null)
@@ -28,19 +34,26 @@ export default function PadrinosAdmin() {
   }, [])
 
   const agregarStaff = async () => {
-    if (!staffNombre.trim() || creando) return
+    if (!staffNombre.trim() || !/^[0-9]{6,10}$/.test(staffCedula) || creando) return
     setCreando(true)
     const res = await crearPadrinoApi({
       nombre: staffNombre.trim(),
-      cedula: staffCedula.trim() || undefined,
+      cedula: staffCedula.trim(),
+      email: staffEmail.trim(),
       sector: staffSector.trim() || undefined,
+      numero: staffNumero ? Number(staffNumero) : undefined,
+      celular: staffCelular.trim() || undefined,
+      direccion: staffDireccion.trim() || undefined,
+      barrio: staffBarrio.trim() || undefined,
     })
     setCreando(false)
     if (res) {
-      setCredenciales({ nombre: staffNombre.trim(), email: res.email, password: res.password })
+      setCredenciales({ nombre: staffNombre.trim(), email: res.email || 'Sin correo: no puede iniciar sesión', password: res.password || 'Sin acceso' })
       setStaffNombre('')
+      setStaffEmail('')
       setStaffCedula('')
       setStaffSector('')
+      setStaffNumero(''); setStaffCelular(''); setStaffDireccion(''); setStaffBarrio('')
       setNuevoOpen(false)
     }
   }
@@ -49,8 +62,10 @@ export default function PadrinosAdmin() {
     if (creando) return
     setNuevoOpen(false)
     setStaffNombre('')
+    setStaffEmail('')
     setStaffCedula('')
     setStaffSector('')
+    setStaffNumero(''); setStaffCelular(''); setStaffDireccion(''); setStaffBarrio('')
   }
 
   const resetClave = async (p: PadrinoApi) => {
@@ -89,9 +104,12 @@ export default function PadrinosAdmin() {
       )}
 
       <Card title="🛡️ Padrinos de la mesa de datos" action={
+        <div className="flex flex-wrap gap-2 justify-end">
+        <DeleteAllButton resource="padrinos" count={padrinosApi.length} disabled={cargandoPadrinos || creando || !!ocupadoId} onDeleted={async () => { await Promise.all([cargarPadrinosApi(), cargarUsuariosApi()]); setCredenciales(null) }} />
         <button type="button" onClick={() => setNuevoOpen(true)} className="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700">
           + Nuevo padrino
         </button>
+        </div>
       }>
         <p className="text-xs text-slate-500 mb-3">
           Un padrino es personal de campaña: no necesita votar en Valledupar. Cada líder se asigna a un padrino desde el módulo Líderes.
@@ -100,7 +118,7 @@ export default function PadrinosAdmin() {
           <table className="w-full min-w-[760px] text-left">
             <thead className="bg-slate-50">
               <tr>
-                {['Padrino', 'Cédula', 'Sector', 'Estado', 'Líderes apadrinados', ''].map((h) => (
+                {['No.', 'Padrino', 'Cédula', 'Celular', 'Dirección', 'Barrio', 'Sector', 'Estado', 'Líderes apadrinados', ''].map((h) => (
                   <th key={h} className="text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 px-3 py-2.5 border-b border-slate-200 whitespace-nowrap">
                     {h}
                   </th>
@@ -110,7 +128,7 @@ export default function PadrinosAdmin() {
             <tbody>
               {padrinosApi.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-3 py-8 text-slate-400 text-sm text-center">
+                  <td colSpan={10} className="px-3 py-8 text-slate-400 text-sm text-center">
                     {cargandoPadrinos ? 'Cargando padrinos…' : 'Sin padrinos registrados todavía.'}
                   </td>
                 </tr>
@@ -119,11 +137,15 @@ export default function PadrinosAdmin() {
                 const lideres = lideresApi.filter((l) => l.padrinoId === p.id)
                 return (
                   <tr key={p.id} className="border-b border-slate-100">
+                    <td className="px-3 py-2.5 text-xs text-slate-500">{p.numero ?? '—'}</td>
                     <td className="px-3 py-2.5">
                       <div className="text-sm font-semibold text-slate-800">{p.nombre}</div>
                       {p.email && <div className="font-mono text-[10px] text-slate-400">{p.email}</div>}
                     </td>
                     <td className="px-3 py-2.5 text-xs text-slate-500 font-mono">{p.cedula || '—'}</td>
+                    <td className="px-3 py-2.5 text-xs text-slate-500">{p.celular || '—'}</td>
+                    <td className="px-3 py-2.5 text-xs text-slate-500">{p.direccion || '—'}</td>
+                    <td className="px-3 py-2.5 text-xs text-slate-500">{p.barrio || '—'}</td>
                     <td className="px-3 py-2.5 text-xs text-slate-500">{p.sector || '—'}</td>
                     <td className="px-3 py-2.5">
                       <Badge className={p.activo ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}>
@@ -170,23 +192,35 @@ export default function PadrinosAdmin() {
       <Modal open={nuevoOpen} onClose={cerrarNuevo} title="Nuevo padrino" footer={
         <>
           <button type="button" onClick={cerrarNuevo} disabled={creando} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-40">Cancelar</button>
-          <button type="submit" form="nuevo-padrino" disabled={!staffNombre.trim() || creando} className="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white disabled:opacity-40 hover:bg-blue-700">
+          <button type="submit" form="nuevo-padrino" disabled={!staffNombre.trim() || !/^[0-9]{6,10}$/.test(staffCedula) || creando} className="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white disabled:opacity-40 hover:bg-blue-700">
             {creando ? 'Creando…' : 'Agregar padrino'}
           </button>
         </>
       }>
         <p className="text-xs text-slate-500 mb-2">
-          Crea la cuenta de acceso (correo y contraseña se generan automáticamente y se muestran una sola vez).
+          Con correo, la contraseña inicial será la cédula. Sin correo, el padrino queda registrado y no puede iniciar sesión.
         </p>
         <form id="nuevo-padrino" onSubmit={(event) => { event.preventDefault(); void agregarStaff() }} className="space-y-3">
+          <label className="block text-sm text-slate-700">No. (opcional)<input type="number" min={1} step={1} disabled={creando} value={staffNumero} onChange={(e) => setStaffNumero(e.target.value)} className={`${inputCls2} mt-1 w-full`} /></label>
           <label className="block text-sm text-slate-700">
             Nombre completo
             <input autoFocus required disabled={creando} value={staffNombre} onChange={(e) => setStaffNombre(e.target.value)} className={`${inputCls2} mt-1 w-full`} />
           </label>
           <label className="block text-sm text-slate-700">
-            Cédula (opcional)
-            <input disabled={creando} inputMode="numeric" value={staffCedula} onChange={(e) => setStaffCedula(e.target.value)} className={`${inputCls2} mt-1 w-full`} />
+            Correo electrónico (opcional)
+            <input type="email" maxLength={254} disabled={creando} value={staffEmail} onChange={(e) => setStaffEmail(e.target.value)} className={`${inputCls2} mt-1 w-full`} />
           </label>
+          <label className="block text-sm text-slate-700">
+            Cédula
+            <input required pattern="[0-9]{6,10}" maxLength={10} disabled={creando} inputMode="numeric" value={staffCedula} onChange={(e) => setStaffCedula(e.target.value.replace(/\D/g, ''))} className={`${inputCls2} mt-1 w-full`} />
+            <span className="block mt-1 text-xs text-slate-500">Esta será la contraseña inicial (6 a 10 dígitos).</span>
+          </label>
+          <label className="block text-sm text-slate-700">
+            Celular (opcional)
+            <input type="tel" maxLength={30} disabled={creando} value={staffCelular} onChange={(e) => setStaffCelular(e.target.value)} className={`${inputCls2} mt-1 w-full`} />
+          </label>
+          <label className="block text-sm text-slate-700">Dirección (opcional)<input maxLength={300} disabled={creando} value={staffDireccion} onChange={(e) => setStaffDireccion(e.target.value)} className={`${inputCls2} mt-1 w-full`} /></label>
+          <label className="block text-sm text-slate-700">Barrio (opcional)<input maxLength={150} disabled={creando} value={staffBarrio} onChange={(e) => setStaffBarrio(e.target.value)} className={`${inputCls2} mt-1 w-full`} /></label>
           <label className="block text-sm text-slate-700">
             Sector / zona (opcional)
             <input disabled={creando} value={staffSector} onChange={(e) => setStaffSector(e.target.value)} className={`${inputCls2} mt-1 w-full`} />

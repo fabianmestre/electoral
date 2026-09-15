@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'subadmin' | 'padrino'
+export type UserRole = 'admin' | 'subadmin' | 'padrino' | 'digitador' | 'lider'
 export type Permiso = 'conectividad' | 'usuarios' | 'datos' | 'reset'
 export type NivelVoto = 'Firme' | 'Indeciso' | 'En Riesgo'
 export type RolDiaE = 'Votante' | 'Conductor' | 'Testigo electoral'
@@ -225,7 +225,7 @@ export interface FiltrosEnvio {
 
 export type PersonaInput = Omit<
   Persona,
-  'id' | 'esLider' | 'esPadrino' | 'planillaCodigo' | 'userId' | 'metaVotos' | 'habeasDataFecha' | 'creadoEn' | 'creadoPor' | 'votoRegistrado' | 'votoHora'
+  'id' | 'esLider' | 'esPadrino' | 'userId' | 'metaVotos' | 'habeasDataFecha' | 'creadoEn' | 'creadoPor' | 'votoRegistrado' | 'votoHora'
 >
 
 export type GestionInput = Omit<Gestion, 'id' | 'creadoEn' | 'creadoPor'>
@@ -233,17 +233,28 @@ export type GestionInput = Omit<Gestion, 'id' | 'creadoEn' | 'creadoPor'>
 /* ---------- Backend real (Supabase) — Directorio de Simpatizantes ---------- */
 
 export interface SimpatizanteApi {
+  numeroPlanilla?: number | null
+  nombreCompletoOriginal?: string | null
+  tieneVehiculo?: boolean | null
+  tipoVehiculoPlanilla?: 'Carro' | 'Moto' | null
+  trazabilidad?: {
+    registradoPor: { id: string; nombre: string; rol: UserRole }
+    lider: { id: string; nombre: string }
+    padrino: { id: string; nombre: string }
+    fecha: string
+  } | null
+  planillaCodigo?: string | null
   id: string
   nombres: string
   apellidos: string
   cedula: string
-  fechaNacimiento: string
+  fechaNacimiento: string | null
   telefono: string
   correo: string | null
   direccion: string | null
   departamento: string
   municipio: string
-  zona: ZonaGeografica
+  zona: ZonaGeografica | null
   comuna: string | null
   corregimiento: string | null
   barrio: string
@@ -271,7 +282,7 @@ export interface SimpatizanteApi {
 
 export type SimpatizanteApiInput = Omit<
   SimpatizanteApi,
-  'id' | 'habeasDataFecha' | 'votoRegistrado' | 'votoHora' | 'creadoPor' | 'creadoEn' | 'actualizadoEn'
+  'id' | 'trazabilidad' | 'habeasDataFecha' | 'votoRegistrado' | 'votoHora' | 'creadoPor' | 'creadoEn' | 'actualizadoEn'
 >
 
 export interface ActividadDiaEApi {
@@ -292,6 +303,8 @@ export interface UsuarioApi {
 }
 
 export interface LiderApi {
+  correo: string | null
+  userId?: string | null
   id: string
   nombres: string
   apellidos: string
@@ -306,9 +319,13 @@ export interface LiderApi {
   actualizadoEn: string
 }
 
-export type LiderApiInput = Omit<LiderApi, 'id' | 'creadoPor' | 'creadoEn' | 'actualizadoEn'>
+export type LiderApiInput = Omit<LiderApi, 'id' | 'userId' | 'creadoPor' | 'creadoEn' | 'actualizadoEn'>
 
 export interface PadrinoApi {
+  numero: number | null
+  celular: string | null
+  direccion: string | null
+  barrio: string | null
   id: string
   nombre: string
   cedula: string | null
@@ -317,6 +334,17 @@ export interface PadrinoApi {
   activo: boolean
   email: string | null
   creadoEn: string
+}
+
+export interface PadrinoApiInput {
+  nombre: string
+  email: string
+  cedula: string
+  sector?: string
+  numero?: number
+  celular?: string
+  direccion?: string
+  barrio?: string
 }
 
 export interface GestionApi {

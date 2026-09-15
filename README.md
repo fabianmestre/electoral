@@ -38,3 +38,54 @@ Vite redirige `/api` al backend durante el desarrollo.
 Ejecuta `back/sql/001_users.sql` y después `back/sql/002_seed_users.sql` en Supabase.
 El segundo script crea las cinco cuentas iniciales con contraseña `123456`.
 Los demás módulos del frontend todavía usan sus datos locales.
+
+## Digitadores
+
+Ejecuta `back/sql/013_digitadores.sql` después de las migraciones anteriores.
+El administrador crea y activa cuentas desde el módulo Digitador, con correo y
+cédula obligatorios. La contraseña inicial es la cédula.
+El digitador puede registrar y corregir fichas para todos los líderes, indicando
+el código de planilla. No administra cuentas, líderes ni elimina simpatizantes.
+El padrino de cada líder puede consultar y completar esas fichas desde Simpatizantes.
+
+## Borrado masivo
+
+Solo el administrador puede usar «Borrar todos» en Padrinos y Líderes.
+Ejecuta `back/sql/014_borrar_padrinos.sql` para habilitar el borrado atómico de
+las cuentas y perfiles de padrinos. Crear la función no elimina registros.
+El borrado se bloquea si existen datos relacionados y requiere escribir BORRAR
+en el modal de confirmación.
+
+## Cargue de padrinos
+
+Ejecuta `back/sql/015_campos_padrinos.sql` para agregar número, celular, dirección
+y barrio. Luego ejecuta `back/sql/016_cargue_padrinos.sql` para cargar los ocho
+padrinos de la planilla. Las nuevas cuentas con correo usan la cédula como
+contraseña inicial. Los padrinos sin correo quedan sin acceso al login.
+Reejecutar el cargue no duplica padrinos ni cambia contraseñas existentes.
+
+## Acceso de líderes
+
+Ejecuta `back/sql/017_acceso_lideres.sql`. El formulario de líderes pide nombres,
+apellidos, correo, cédula y padrino asociado. Al guardar un líder con correo se
+crea su cuenta de acceso, con la cédula como contraseña inicial. El líder puede
+registrar y corregir únicamente sus propios simpatizantes. Los líderes anteriores
+sin correo conservan sus registros y quedan sin acceso hasta completar el correo.
+Editar la ficha no cambia una contraseña que el líder ya haya personalizado.
+
+## Origen de simpatizantes
+
+Ejecuta `back/sql/018_trazabilidad_simpatizantes.sql`. Cada nuevo registro guarda
+automáticamente el usuario que lo digitó, el líder, el padrino y la fecha iniciales.
+La base de datos conserva ese origen al editar o reasignar la ficha. Las columnas
+Líder y Padrino muestran la asociación actual; Registrado por muestra su origen.
+Los registros anteriores no reciben un origen reconstruido.
+
+## Captura de planillas
+
+Ejecuta `back/sql/019_captura_planillas_digitador.sql`. La captura rápida del
+digitador replica las columnas de la planilla: número, nombre y apellidos,
+cédula, celular, dirección, barrio, lugar de votación, mesa y vehículo. El líder
+se selecciona antes de guardar y el padrino se obtiene de esa asociación. Los
+datos que la planilla no contiene quedan pendientes; no se inventa fecha de
+nacimiento, zona ni autorización de tratamiento de datos.

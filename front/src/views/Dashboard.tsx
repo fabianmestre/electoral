@@ -75,6 +75,7 @@ export default function Dashboard() {
   const cumples = useMemo(
     () =>
       simpatizantesApi
+        .filter((p): p is typeof p & { fechaNacimiento: string } => Boolean(p.fechaNacimiento))
         .map((p) => ({ p, dias: diasParaCumple(p.fechaNacimiento) }))
         .filter((x) => x.dias >= 0 && x.dias <= 7)
         .sort((a, b) => a.dias - b.dias),

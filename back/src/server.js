@@ -11,6 +11,9 @@ import { canManageLideres, serializeLider, validateLider } from './lideres.js'
 import { canManageGestiones, serializeGestion, validateGestion } from './gestiones.js'
 import { canRegistrarActividad, serializeActividad, validateActividad } from './dia-e.js'
 import { actualizarPadrinoAdmin, crearPadrinoAdmin, listarPadrinosAdmin, resetClavePadrinoAdmin } from './admin.js'
+import { listarDigitadoresAdmin, crearDigitadorAdmin, actualizarDigitadorAdmin } from './admin.js'
+import { borrarTodosPadrinosAdmin } from './admin.js'
+import { validarCapturaPlanilla } from './digitacion-planillas.js'
 
 const port = Number(process.env.PORT || 3002)
 
@@ -69,6 +72,9 @@ async function crearSimpatizante(request) {
   const { user, token } = await requireUser(request)
   if (!canManageSimpatizantes(user)) throw new ApiError(403, 'No tienes permiso para registrar simpatizantes.')
   const payload = await body(request)
+  if (user.rol === 'digitador' && (typeof payload.planillaCodigo !== 'string' || !payload.planillaCodigo.trim())) {
+    throw new ApiError(422, 'Ingresa el código de la planilla que estás digitando.')
+  }
   const { vehiculos, ...rest } = payload
   const columns = validateSimpatizante(rest, { partial: false })
   const vehiculoRows = validateVehiculos(vehiculos) ?? []
@@ -87,6 +93,18 @@ async function crearSimpatizante(request) {
   }
 
   return { status: 201, data: serializeSimpatizante({ ...inserted, simpatizante_vehiculos: vehiculosGuardados }) }
+}
+
+async function crearCapturaPlanilla(request) {
+  const { user, token } = await requireUser(request)
+  if (user.rol !== 'digitador' && user.rol !== 'admin') throw new ApiError(403, 'Solo los digitadores pueden usar la captura de planillas.')
+  const columns = validarCapturaPlanilla(await body(request))
+  const [inserted] = await db.request('/rest/v1/simpatizantes', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, Prefer: 'return=representation' },
+    body: JSON.stringify(columns),
+  })
+  return { status: 201, data: serializeSimpatizante({ ...inserted, simpatizante_vehiculos: [] }) }
 }
 
 async function listarSimpatizantes(request, searchParams) {
@@ -162,6 +180,7 @@ async function editarSimpatizante(request, id) {
 
 async function eliminarSimpatizante(request, id) {
   const { user, token } = await requireUser(request)
+  if (user.rol === 'digitador' || user.rol === 'lider') throw new ApiError(403, 'Este rol no puede eliminar simpatizantes.')
   if (!canManageSimpatizantes(user)) throw new ApiError(403, 'No tienes permiso para eliminar simpatizantes.')
   const deleted = await db.request(`/rest/v1/simpatizantes?id=eq.${encodeURIComponent(id)}`, {
     method: 'DELETE', headers: { Authorization: `Bearer ${token}`, Prefer: 'return=representation' },
@@ -366,6 +385,28 @@ async function crearActividad(request) {
 function validarDatosPadrino(payload, { partial = false } = {}) {
   const errors = {}
   const result = {}
+  for (const [field, limit] of [['celular', 30], ['direccion', 300], ['barrio', 150]]) {
+    if (!(field in payload)) continue
+    const value = payload[field]
+    if (value === null || value === '') result[field] = null
+    else if (typeof value !== 'string' || value.trim().length > limit) errors[field] = `Máximo ${limit} caracteres.`
+    else if (field === 'celular' && !/^\+?[0-9 ()-]{7,30}$/.test(value.trim())) errors[field] = 'Ingresa un celular válido.'
+    else result[field] = value.trim()
+  }
+  if ('numero' in payload) {
+    if (payload.numero === null) result.numero = null
+    else if (!Number.isInteger(payload.numero) || payload.numero <= 0) errors.numero = 'Ingresa un número positivo.'
+    else result.numero = payload.numero
+  }
+  if (!partial) {
+    if (payload.email === undefined || payload.email === null || payload.email === '') result.email = null
+    else if (typeof payload.email !== 'string' || payload.email.trim().length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email.trim())) {
+      errors.email = 'Ingresa un correo válido.'
+    } else result.email = payload.email.trim().toLowerCase()
+    if (typeof payload.cedula !== 'string' || !/^[0-9]{6,10}$/.test(payload.cedula.trim())) {
+      errors.cedula = 'La cédula es obligatoria (6 a 10 dígitos) y será la contraseña inicial.'
+    }
+  }
   if (!partial || 'nombre' in payload) {
     if (typeof payload.nombre !== 'string' || !payload.nombre.trim() || payload.nombre.trim().length > 100) {
       errors.nombre = 'Ingresa un nombre válido (máximo 100 caracteres).'
@@ -400,6 +441,7 @@ async function crearPadrino(request) {
     status: 201,
     data: {
       id: creado.id, nombre: creado.nombre, cedula: creado.cedula, sector: creado.sector,
+      numero: creado.numero, celular: creado.celular, direccion: creado.direccion, barrio: creado.barrio,
       padrinoId: creado.padrinoId, activo: creado.activo, email: creado.email, password: creado.password,
     },
   }
@@ -413,6 +455,7 @@ async function listarPadrinos(request) {
     data: {
       items: rows.map((r) => ({
         id: r.id, nombre: r.nombre, cedula: r.cedula, sector: r.sector,
+        numero: r.numero, celular: r.celular, direccion: r.direccion, barrio: r.barrio,
         padrinoId: r.padrinoId, activo: r.activo, email: r.email, creadoEn: r.creadoEn,
       })),
     },
@@ -486,8 +529,37 @@ const server = createServer(async (request, response) => {
       return send(200, { status: 'ok' })
     }
 
+    if (pathname === '/api/padrinos' && request.method === 'DELETE') {
+      await requireAdmin(request)
+      return send(200, { eliminados: await borrarTodosPadrinosAdmin() })
+    }
+    if (pathname === '/api/lideres' && request.method === 'DELETE') {
+      const { token } = await requireAdmin(request)
+      const deleted = await db.request('/rest/v1/lideres?id=not.is.null', {
+        method: 'DELETE', headers: { Authorization: `Bearer ${token}`, Prefer: 'return=representation' },
+      })
+      return send(200, { eliminados: deleted.length })
+    }
+    if (pathname === '/api/digitadores' && request.method === 'GET') {
+      await requireAdmin(request)
+      return send(200, { items: await listarDigitadoresAdmin() })
+    }
+    if (pathname === '/api/digitadores' && request.method === 'POST') {
+      await requireAdmin(request)
+      return send(201, await crearDigitadorAdmin(await body(request)))
+    }
+    const digitadorMatch = pathname.match(new RegExp(`^/api/digitadores/(${UUID_RE})$`))
+    if (digitadorMatch && request.method === 'PATCH') {
+      await requireAdmin(request)
+      return send(200, await actualizarDigitadorAdmin(digitadorMatch[1], await body(request)))
+    }
+
     if (pathname === '/api/simpatizantes' && request.method === 'POST') {
       const { status, data } = await crearSimpatizante(request)
+      return send(status, data)
+    }
+    if (pathname === '/api/digitacion/planillas' && request.method === 'POST') {
+      const { status, data } = await crearCapturaPlanilla(request)
       return send(status, data)
     }
     if (pathname === '/api/simpatizantes' && request.method === 'GET') {

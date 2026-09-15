@@ -6,9 +6,7 @@ import {
   ClipboardList,
   GraduationCap,
   Handshake,
-  KeyRound,
   LayoutDashboard,
-  LogOut,
   Menu,
   // MapPin,
   RotateCcw,
@@ -43,6 +41,8 @@ import PadrinoPlanillas from '../views/PadrinoPlanillas'
 import PadrinoSimpatizantes from '../views/PadrinoSimpatizantes'
 import PadrinosAdmin from '../views/PadrinosAdmin'
 import GestionLideres from '../views/GestionLideres'
+import Digitador from '../views/Digitador'
+import AccountMenu from './AccountMenu'
 
 interface NavItem {
   id: ViewId
@@ -52,7 +52,9 @@ interface NavItem {
 }
 
 const NAV: Record<UserRole, NavItem[]> = {
+  lider: [{ id: 'digitador', label: 'Mis simpatizantes', sub: 'Registro y actualización de mis fichas', icon: Users }],
   admin: [
+    { id: 'digitador', label: 'Digitador', sub: 'Cuentas y captura de planillas', icon: ClipboardList },
     // { id: 'consulta-puesto', label: 'Consulta puesto', sub: 'Lugar de votación oficial', icon: MapPin },
     { id: 'dashboard', label: 'Dashboard Analítico', sub: 'Métricas globales y legal', icon: LayoutDashboard },
     { id: 'directorio', label: 'Directorio de Simpatizantes', sub: 'Fichas técnicas', icon: Users },
@@ -75,9 +77,13 @@ const NAV: Record<UserRole, NavItem[]> = {
     { id: 'padrino-planillas', label: 'Planillas', sub: 'Captura y auditoría', icon: ClipboardList },
     { id: 'padrino-simpatizantes', label: 'Simpatizantes', sub: 'Gestión sobre mis líderes', icon: Users },
   ],
+  digitador: [
+    { id: 'digitador', label: 'Digitador', sub: 'Captura de simpatizantes y planillas', icon: ClipboardList },
+  ],
 }
 
 const TITLES: Record<ViewId, string> = {
+  digitador: 'Digitador',
   'consulta-puesto': 'Consulta puesto',
   dashboard: 'Dashboard Analítico',
   lideres: 'Red de Líderes y Metas',
@@ -99,6 +105,8 @@ const TITLES: Record<ViewId, string> = {
 
 function renderView(view: ViewId) {
   switch (view) {
+    case 'digitador':
+      return <Digitador />
     case 'consulta-puesto':
       return <ConsultaPuesto />
     case 'dashboard':
@@ -149,7 +157,7 @@ export default function Layout() {
       ? '🌐 Acceso Total'
       : session.rol === 'subadmin'
         ? '🔌 Conectividad y Comunicaciones'
-        : `🛡️ ${nombrePadrino(db, session.padrinoId)}`
+        : session.rol === 'lider' ? 'Líder' : session.rol === 'digitador' ? 'Digitación de planillas' : `🛡️ ${nombrePadrino(db, session.padrinoId)}`
   const zoneTone =
     session.rol === 'admin'
       ? 'bg-blue-100 text-blue-700'
@@ -161,11 +169,11 @@ export default function Layout() {
     <div className="min-h-screen">
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 w-64 bg-slate-900 text-slate-200 z-40 transition-all ${
+        className={`fixed inset-y-0 left-0 w-64 flex flex-col bg-slate-900 text-slate-200 z-40 transition-all ${
           open ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0 ${collapsed ? 'lg:w-16' : 'lg:w-64'}`}
       >
-        <div className={`flex items-center gap-3 h-16 border-b border-slate-800 ${collapsed ? 'lg:justify-center lg:px-0' : 'px-5'}`}>
+        <div className={`flex items-center gap-3 h-16 shrink-0 border-b border-slate-800 ${collapsed ? 'lg:justify-center lg:px-0' : 'px-5'}`}>
           <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
             <ShieldCheck className="w-5 h-5" />
           </div>
@@ -177,7 +185,7 @@ export default function Layout() {
             <X className="w-5 h-5" />
           </button>
         </div>
-        <nav className="px-3 py-4 space-y-1 overflow-y-auto h-[calc(100vh-8rem)]">
+        <nav className="px-3 py-4 space-y-1 overflow-y-auto flex-1 min-h-0">
           {items.map((it) => {
             const Icon = it.icon
             const active = view === it.id
@@ -202,7 +210,7 @@ export default function Layout() {
             )
           })}
         </nav>
-        <div className="absolute bottom-0 inset-x-0 p-3 border-t border-slate-800 space-y-1">
+        <div className="shrink-0 p-3 border-t border-slate-800 space-y-1">
           <button
             onClick={resetDatos}
             title={collapsed ? 'Restablecer datos de prueba' : undefined}
@@ -211,6 +219,7 @@ export default function Layout() {
             <RotateCcw className="w-3.5 h-3.5 shrink-0" />
             <span className={collapsed ? 'lg:hidden' : ''}>Restablecer datos de prueba</span>
           </button>
+          <AccountMenu session={session} collapsed={collapsed} onPassword={() => { setShowPass(true); setOpen(false) }} onLogout={logout} />
         </div>
       </aside>
 
@@ -229,24 +238,12 @@ export default function Layout() {
             {collapsed ? <ChevronsRight className="w-5 h-5" /> : <ChevronsLeft className="w-5 h-5" />}
           </button>
           <div className="flex-1 min-w-0">
-            <h2 className="font-bold text-slate-900 truncate">{TITLES[view]}</h2>
+            <h2 className="font-bold text-slate-900 truncate">{session.rol === 'lider' && view === 'digitador' ? 'Mis simpatizantes' : TITLES[view]}</h2>
             <p className="text-[11px] text-slate-500 truncate">
               {(items.find((i) => i.id === view) || {}).sub ?? ''}
             </p>
           </div>
           <Badge className={`${zoneTone} max-w-[220px] truncate`}>{topBadge}</Badge>
-          <button
-            onClick={() => setShowPass(true)}
-            className="inline-flex items-center gap-1.5 text-xs bg-slate-100 hover:bg-slate-200 rounded-lg px-3 py-2 font-medium shrink-0"
-          >
-            <KeyRound className="w-3.5 h-3.5" /> Contraseña
-          </button>
-          <button
-            onClick={logout}
-            className="inline-flex items-center gap-1.5 text-xs bg-slate-100 hover:bg-slate-200 rounded-lg px-3 py-2 font-medium shrink-0"
-          >
-            <LogOut className="w-3.5 h-3.5" /> Cambiar usuario
-          </button>
         </header>
 
         <main className="flex-1 p-4 md:p-6 max-w-[1400px] w-full mx-auto">
