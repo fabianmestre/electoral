@@ -8,6 +8,8 @@ const base = {
   cedula: '1065840035',
   celular: '300 123 4567',
   direccion: 'Calle 10 # 2-30',
+  departamento: 'Cesar',
+  municipio: 'Valledupar',
   barrio: 'Centro',
   puesto: 'Colegio Nacional',
   mesa: 12,

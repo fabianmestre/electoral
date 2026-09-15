@@ -71,6 +71,24 @@ export default function Digitador() {
   const personas = simpatizantesApi.filter((p) => (!liderId || p.liderId === liderId)
     && `${p.nombres} ${p.apellidos} ${p.cedula} ${p.numeroPlanilla ?? ''}`.toLowerCase().includes(text))
 
+  if (!esAdmin) {
+    const liderPropio = session?.rol === 'lider' ? lideresApi.find((item) => item.userId === session.id) : undefined
+    return <Card title="Captura de planilla">
+      <p className="mb-4 text-sm text-slate-500">Completa una fila y pulsa Guardar y continuar. El formulario quedará listo para la siguiente persona.</p>
+      {session?.rol === 'lider' && !liderPropio && <p className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">Cargando la asociación de tu cuenta de líder…</p>}
+      <CapturaPlanillaModal
+        open
+        embedded
+        defaultLiderId={liderPropio?.id}
+        lideres={lideresApi}
+        usuarios={usuariosApi}
+        onClose={() => undefined}
+        onSaved={cargarSimpatizantesApi}
+        notify={notify}
+      />
+    </Card>
+  }
+
   return (
     <div className="space-y-4">
       {esAdmin && <Card title="Digitadores" action={<button type="button" className={buttonCls} onClick={() => setModalOpen(true)}>+ Nuevo digitador</button>}>

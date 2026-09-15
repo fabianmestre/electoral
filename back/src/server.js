@@ -97,8 +97,16 @@ async function crearSimpatizante(request) {
 
 async function crearCapturaPlanilla(request) {
   const { user, token } = await requireUser(request)
-  if (user.rol !== 'digitador' && user.rol !== 'admin') throw new ApiError(403, 'Solo los digitadores pueden usar la captura de planillas.')
-  const columns = validarCapturaPlanilla(await body(request))
+  if (!['digitador', 'lider', 'admin'].includes(user.rol)) throw new ApiError(403, 'No tienes permiso para usar la captura de planillas.')
+  const payload = await body(request)
+  if (user.rol === 'lider') {
+    const rows = await db.request(`/rest/v1/lideres?user_id=eq.${encodeURIComponent(user.id)}&activo=is.true&select=id`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!rows?.length) throw new ApiError(403, 'Tu cuenta no tiene un líder activo asociado.')
+    payload.liderId = rows[0].id
+  }
+  const columns = validarCapturaPlanilla(payload)
   const [inserted] = await db.request('/rest/v1/simpatizantes', {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, Prefer: 'return=representation' },
