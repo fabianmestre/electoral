@@ -11,11 +11,12 @@ interface Props {
   notify: (message: string, type?: 'success' | 'error') => void
   embedded?: boolean
   defaultLiderId?: string
+  capturaLider?: boolean
 }
 
 const initial = { nombreCompleto: '', cedula: '', celular: '', direccion: '', departamento: 'Cesar', municipio: 'Valledupar', barrio: '', puesto: '', mesa: '', liderId: '', tieneVehiculo: false, tipoVehiculo: '' }
 
-export default function CapturaPlanillaModal({ open, lideres, usuarios, onClose, onSaved, notify, embedded = false, defaultLiderId = '' }: Props) {
+export default function CapturaPlanillaModal({ open, lideres, usuarios, onClose, onSaved, notify, embedded = false, defaultLiderId = '', capturaLider = false }: Props) {
   const [form, setForm] = useState({ ...initial, liderId: defaultLiderId })
   const [busy, setBusy] = useState(false)
   const lider = lideres.find((item) => item.id === form.liderId)
@@ -23,9 +24,10 @@ export default function CapturaPlanillaModal({ open, lideres, usuarios, onClose,
   useEffect(() => { if (defaultLiderId) setForm((current) => ({ ...current, liderId: defaultLiderId })) }, [defaultLiderId])
   const valido = useMemo(() => Boolean(
     form.nombreCompleto.trim().includes(' ') && /^[0-9]{6,10}$/.test(form.cedula)
-    && form.celular.trim() && form.direccion.trim() && form.departamento.trim() && form.municipio.trim() && form.barrio.trim() && form.puesto.trim()
-    && form.mesa && form.liderId && (!form.tieneVehiculo || form.tipoVehiculo)
-  ), [form])
+    && form.celular.trim() && form.direccion.trim() && form.municipio.trim() && form.barrio.trim()
+    && (capturaLider || (form.departamento.trim() && form.puesto.trim() && form.mesa))
+    && form.liderId && (!form.tieneVehiculo || form.tipoVehiculo)
+  ), [form, capturaLider])
 
   function close() {
     if (busy) return
@@ -63,11 +65,11 @@ export default function CapturaPlanillaModal({ open, lideres, usuarios, onClose,
       <label className="text-sm">Cédula *<input required inputMode="numeric" maxLength={10} className={inputCls} value={form.cedula} onChange={(e) => patch({ cedula: numeric(e.target.value) })} /></label>
       <label className="text-sm">Celular *<input required inputMode="tel" maxLength={30} className={inputCls} value={form.celular} onChange={(e) => patch({ celular: e.target.value })} /></label>
       <label className="text-sm sm:col-span-2">Dirección de residencia *<input required maxLength={300} className={inputCls} value={form.direccion} onChange={(e) => patch({ direccion: e.target.value })} /></label>
-      <label className="text-sm">Departamento *<input required maxLength={100} className={inputCls} value={form.departamento} onChange={(e) => patch({ departamento: e.target.value })} /></label>
+      {!capturaLider && <label className="text-sm">Departamento *<input required maxLength={100} className={inputCls} value={form.departamento} onChange={(e) => patch({ departamento: e.target.value })} /></label>}
       <label className="text-sm">Municipio *<input required maxLength={100} className={inputCls} value={form.municipio} onChange={(e) => patch({ municipio: e.target.value })} /></label>
       <label className="text-sm">Barrio *<input required maxLength={150} className={inputCls} value={form.barrio} onChange={(e) => patch({ barrio: e.target.value })} /></label>
-      <label className="text-sm">Lugar de votación *<input required maxLength={150} className={inputCls} value={form.puesto} onChange={(e) => patch({ puesto: e.target.value })} /></label>
-      <label className="text-sm">Mesa *<input required min="1" type="number" className={inputCls} value={form.mesa} onChange={(e) => patch({ mesa: e.target.value })} /></label>
+      {!capturaLider && <label className="text-sm">Lugar de votación *<input required maxLength={150} className={inputCls} value={form.puesto} onChange={(e) => patch({ puesto: e.target.value })} /></label>}
+      {!capturaLider && <label className="text-sm">Mesa *<input required min="1" type="number" className={inputCls} value={form.mesa} onChange={(e) => patch({ mesa: e.target.value })} /></label>}
       <fieldset className="text-sm"><legend className="mb-2">¿Tiene vehículo? *</legend><div className="flex gap-5"><label><input type="radio" checked={form.tieneVehiculo} onChange={() => patch({ tieneVehiculo: true })} /> Sí</label><label><input type="radio" checked={!form.tieneVehiculo} onChange={() => patch({ tieneVehiculo: false, tipoVehiculo: '' })} /> No</label></div></fieldset>
       <label className="text-sm sm:col-span-2">Carro / moto{form.tieneVehiculo ? ' *' : ''}<select required={form.tieneVehiculo} disabled={!form.tieneVehiculo} className={inputCls} value={form.tipoVehiculo} onChange={(e) => patch({ tipoVehiculo: e.target.value })}><option value="">— Seleccionar —</option><option>Carro</option><option>Moto</option></select></label>
       <p className="sm:col-span-2 text-xs text-slate-500">Esta captura conserva únicamente la información de la planilla. La ficha queda pendiente de completar y de registrar la autorización de tratamiento de datos.</p>

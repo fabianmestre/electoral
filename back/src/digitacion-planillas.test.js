@@ -32,3 +32,10 @@ test('exige carro o moto únicamente cuando la persona tiene vehículo', () => {
   assert.throws(() => validarCapturaPlanilla({ ...base, tipoVehiculo: '' }), { status: 422 })
   assert.equal(validarCapturaPlanilla({ ...base, tieneVehiculo: false, tipoVehiculo: '' }).tipo_vehiculo_planilla, null)
 })
+
+test('la captura del líder no exige departamento, puesto ni mesa', () => {
+  const row = validarCapturaPlanilla({ ...base, departamento: '', puesto: '', mesa: '' }, { capturaLider: true })
+  assert.equal(row.departamento, null)
+  assert.equal(row.puesto, null)
+  assert.equal(row.mesa, null)
+})

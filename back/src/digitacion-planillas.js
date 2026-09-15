@@ -9,7 +9,7 @@ function texto(value, campo, maximo) {
   return normalized
 }
 
-export function validarCapturaPlanilla(input) {
+export function validarCapturaPlanilla(input, { capturaLider = false } = {}) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new ApiError(400, 'Envía los datos de la planilla.')
   const nombreCompleto = texto(input.nombreCompleto, 'nombreCompleto', 200)
   const partes = nombreCompleto.split(' ')
@@ -20,8 +20,8 @@ export function validarCapturaPlanilla(input) {
   const telefono = texto(input.celular, 'celular', 30)
   const digits = telefono.replace(/\D/g, '')
   if (!/^\+?[\d ()-]+$/.test(telefono) || digits.length < 7 || digits.length > 15) throw new ApiError(422, 'Ingresa un celular válido.')
-  const mesa = Number(input.mesa)
-  if (!Number.isInteger(mesa) || mesa < 1) throw new ApiError(422, 'Ingresa una mesa válida.')
+  const mesa = capturaLider ? null : Number(input.mesa)
+  if (!capturaLider && (!Number.isInteger(mesa) || mesa < 1)) throw new ApiError(422, 'Ingresa una mesa válida.')
   if (!UUID.test(input.liderId ?? '')) throw new ApiError(422, 'Selecciona el líder al que pertenece la planilla.')
   if (typeof input.tieneVehiculo !== 'boolean') throw new ApiError(422, 'Indica si tiene vehículo.')
   const tipoVehiculo = input.tieneVehiculo ? texto(input.tipoVehiculo, 'tipoVehiculo', 10) : null
@@ -36,13 +36,13 @@ export function validarCapturaPlanilla(input) {
     fecha_nacimiento: null,
     telefono,
     direccion: texto(input.direccion, 'direccion', 300),
-    departamento: texto(input.departamento, 'departamento', 100),
+    departamento: capturaLider ? null : texto(input.departamento, 'departamento', 100),
     municipio: texto(input.municipio, 'municipio', 100),
     zona: null,
     comuna: null,
     corregimiento: null,
     barrio: texto(input.barrio, 'barrio', 150),
-    puesto: texto(input.puesto, 'puesto', 150),
+    puesto: capturaLider ? null : texto(input.puesto, 'puesto', 150),
     mesa,
     lider_id: input.liderId,
     tiene_vehiculo: input.tieneVehiculo,

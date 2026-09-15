@@ -106,7 +106,7 @@ async function crearCapturaPlanilla(request) {
     if (!rows?.length) throw new ApiError(403, 'Tu cuenta no tiene un líder activo asociado.')
     payload.liderId = rows[0].id
   }
-  const columns = validarCapturaPlanilla(payload)
+  const columns = validarCapturaPlanilla(payload, { capturaLider: user.rol === 'lider' })
   const [inserted] = await db.request('/rest/v1/simpatizantes', {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, Prefer: 'return=representation' },

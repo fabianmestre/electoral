@@ -79,6 +79,7 @@ export default function Digitador() {
       <CapturaPlanillaModal
         open
         embedded
+        capturaLider={session?.rol === 'lider'}
         defaultLiderId={liderPropio?.id}
         lideres={lideresApi}
         usuarios={usuariosApi}

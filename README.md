@@ -89,3 +89,7 @@ cédula, celular, dirección, barrio, lugar de votación, mesa y vehículo. El l
 se selecciona antes de guardar y el padrino se obtiene de esa asociación. Los
 datos que la planilla no contiene quedan pendientes; no se inventa fecha de
 nacimiento, zona ni autorización de tratamiento de datos.
+
+Ejecuta después `back/sql/020_captura_reducida_lider.sql`. El formulario del
+líder omite departamento, lugar de votación y mesa; esos datos quedan pendientes.
+El digitador conserva la captura completa de esos campos.
