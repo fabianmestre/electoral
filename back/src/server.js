@@ -16,6 +16,7 @@ import { borrarTodosPadrinosAdmin } from './admin.js'
 import { actualizarGestorAdmin, crearGestorAdmin, listarGestoresAdmin } from './admin.js'
 import { cambiarRolSimpatizanteAdmin } from './admin.js'
 import { cambiarAccesoAdmin, listarCredencialesAdmin, restablecerClaveAdmin } from './admin.js'
+import { enviarComunicacion, listarComunicaciones } from './comunicaciones.js'
 import { validarCapturaPlanilla } from './digitacion-planillas.js'
 
 const port = Number(process.env.PORT || 3002)
@@ -621,6 +622,14 @@ const server = createServer(async (request, response) => {
       return send(status, data)
     }
 
+    if (pathname === '/api/comunicaciones' && request.method === 'GET') {
+      await requireAdmin(request)
+      return send(200, { items: await listarComunicaciones() })
+    }
+    if (pathname === '/api/comunicaciones' && request.method === 'POST') {
+      const { user } = await requireAdmin(request)
+      return send(201, await enviarComunicacion(await body(request), user))
+    }
     if (pathname === '/api/credenciales' && request.method === 'GET') {
       await requireAdmin(request)
       return send(200, { items: await listarCredencialesAdmin() })

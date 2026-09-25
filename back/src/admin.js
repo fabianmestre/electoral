@@ -9,7 +9,7 @@ import { validarDigitador } from './digitadores.js'
 const url = process.env.SUPABASE_URL?.replace(/\/$/, '')
 const serviceKey = process.env.SUPABASE_SECRET_KEY
 
-async function adminRequest(path, options = {}) {
+export async function adminRequest(path, options = {}) {
   if (!url || !serviceKey) throw new ApiError(503, 'Falta configurar SUPABASE_SECRET_KEY en el backend.')
   const response = await fetch(`${url}${path}`, {
     ...options,
