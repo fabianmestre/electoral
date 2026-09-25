@@ -114,18 +114,25 @@ export function ProgressBar({ pct, color = 'bg-blue-600' }: { pct: number; color
   )
 }
 
-export function Bars({
+export function Bars<T extends { label: string; value: number; color: string }>({
   data,
   height = 150,
+  onBarClick,
 }: {
-  data: { label: string; value: number; color: string }[]
+  data: T[]
   height?: number
+  onBarClick?: (d: T) => void
 }) {
   const max = Math.max(...data.map((d) => d.value), 1)
   return (
     <div className="flex items-end gap-3 h-52">
       {data.map((d, i) => (
-        <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+        <div
+          key={i}
+          title={`${d.label}: ${d.value}`}
+          onClick={onBarClick ? () => onBarClick(d) : undefined}
+          className={`flex-1 flex flex-col items-center gap-1 h-full justify-end ${onBarClick ? 'cursor-pointer hover:opacity-80' : ''}`}
+        >
           <div className="text-xs font-semibold text-slate-600">{d.value}</div>
           <div
             className="w-full max-w-[60px] rounded-t-md transition-all"
@@ -271,18 +278,18 @@ export function Modal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6">
       <div className="absolute inset-0 bg-slate-900/50" onClick={onClose} />
       <div
-        className={`relative bg-white rounded-2xl shadow-2xl w-full ${wide ? 'max-w-3xl' : 'max-w-lg'} max-h-[92vh] overflow-y-auto fade-in`}
+        className={`relative bg-white rounded-2xl shadow-2xl w-full ${wide ? 'max-w-6xl' : 'max-w-lg'} max-h-[90vh] overflow-y-auto fade-in`}
       >
-        <div className="sticky top-0 bg-white border-b border-slate-200 px-5 py-4 flex items-center justify-between z-10">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
           <div>
-            <h3 className="font-bold text-lg text-slate-900">{title}</h3>
+            <h3 className="font-semibold text-lg text-gray-900">{title}</h3>
             {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-700">
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="p-5">{children}</div>
+        <div className="px-6 py-5">{children}</div>
         {footer && (
           <div className="sticky bottom-0 bg-white border-t border-slate-200 px-5 py-3 flex justify-end gap-2">
             {footer}

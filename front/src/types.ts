@@ -232,6 +232,12 @@ export type GestionInput = Omit<Gestion, 'id' | 'creadoEn' | 'creadoPor'>
 
 /* ---------- Backend real (Supabase) — Directorio de Simpatizantes ---------- */
 
+export type RolSimpatizante = 'simpatizante' | 'lider' | 'padrino' | 'gestor' | 'digitador'
+
+export const ROL_SIMPATIZANTE_LABEL: Record<RolSimpatizante, string> = {
+  simpatizante: 'Simpatizante', lider: 'Líder', padrino: 'Padrino', gestor: 'Gestor', digitador: 'Digitador',
+}
+
 export interface SimpatizanteApi {
   numeroPlanilla?: number | null
   nombreCompletoOriginal?: string | null
@@ -260,6 +266,8 @@ export interface SimpatizanteApi {
   barrio: string
   puesto: string | null
   mesa: number | null
+  departamentoVotacion: string | null
+  municipioVotacion: string | null
   intereses: string[]
   gruposSociales: string[]
   ocupacion: string | null
@@ -270,6 +278,7 @@ export interface SimpatizanteApi {
   liderId: string
   nivelVoto: NivelVoto
   rolDiaE: RolDiaE
+  rol: RolSimpatizante
   habeasData: boolean
   habeasDataFecha: string | null
   votoRegistrado: boolean

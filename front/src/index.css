@@ -39,6 +39,12 @@ body {
 .mx-auto.max-w-\[1400px\] > .space-y-8 > section:nth-child(3) { order: 4; }
 .mx-auto.max-w-\[1400px\] > .space-y-8 > section:nth-child(4) { order: 2; }
 
+/* Compacta la vista estática de gestores sin afectar los demás directorios. */
+main:has(table.min-w-\[1500px\]) table { font-size: 0.75rem; line-height: 1rem; }
+main:has(table.min-w-\[1500px\]) td,
+main:has(table.min-w-\[1500px\]) th { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+main:has(table.min-w-\[1500px\]) > div > p { font-size: 0.75rem; line-height: 1.1rem; }
+
 @keyframes fadeIn {
   from {
     opacity: 0;

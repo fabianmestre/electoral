@@ -21,6 +21,7 @@ import type {
   PadrinoApiInput,
   PadrinoInfo,
   PersonaInput,
+  RolSimpatizante,
   SimpatizanteApi,
   UsuarioApi,
   Usuario,
@@ -70,6 +71,13 @@ export interface DirectorioPreset {
   nivelVoto?: string
   puesto?: string
   mesa?: number
+  municipio?: string
+  comuna?: string
+  corregimiento?: string
+  barrio?: string
+  interes?: string
+  grupoSocial?: string
+  nivelAcademico?: string
 }
 
 interface AppContextValue {
@@ -130,6 +138,7 @@ interface AppContextValue {
   cargandoActividad: boolean
   cargarActividadApi: () => Promise<void>
   registrarVotoApi: (simpatizanteId: string) => Promise<boolean>
+  cambiarRolSimpatizante: (simpatizanteId: string, rol: RolSimpatizante) => Promise<boolean>
   crearActividadApi: (datos: { liderId: string; tipo: 'Apertura' | 'Voto' | 'Nota'; detalle: string }) => Promise<boolean>
   notify: (msg: string, type?: ToastType) => void
   liderFilter: string
@@ -532,6 +541,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
       notify(error instanceof Error ? error.message : 'No se pudo cargar la actividad del Día E.', 'error')
     } finally {
       setCargandoActividad(false)
+    }
+  }
+
+  const cambiarRolSimpatizante = async (simpatizanteId: string, rol: RolSimpatizante): Promise<boolean> => {
+    const token = sessionStorage.getItem('electoral.auth.token')
+    if (!token) {
+      notify('Inicia sesión de nuevo para continuar', 'error')
+      return false
+    }
+    try {
+      const response = await fetch(`/api/simpatizantes/${simpatizanteId}/rol`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ rol }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.error || 'No se pudo cambiar el rol.')
+      return true
+    } catch (error) {
+      notify(error instanceof Error ? error.message : 'No se pudo cambiar el rol.', 'error')
+      return false
     }
   }
 
@@ -1050,6 +1080,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       cargandoActividad,
       cargarActividadApi,
       registrarVotoApi,
+      cambiarRolSimpatizante,
       crearActividadApi,
       notify,
       liderFilter,

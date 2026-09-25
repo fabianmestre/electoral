@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronLeft, ChevronRight, Eye, Filter, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Filter, Plus, Search, X } from 'lucide-react'
 import { useApp } from '../../../store'
 import {
   BARRIOS,
@@ -21,8 +21,17 @@ import {
   municipiosDeDepartamento,
   puestosDeBarrio,
 } from '../../../data'
-import type { SimpatizanteApi, Validez } from '../../../types'
-import { Badge, nivelAcademicoTone, nivelTone } from '../../../components/ui'
+import { ROL_SIMPATIZANTE_LABEL } from '../../../types'
+import type { RolSimpatizante, SimpatizanteApi, Validez } from '../../../types'
+
+const ROL_TONE: Record<RolSimpatizante, string> = {
+  simpatizante: 'bg-blue-50 text-blue-700',
+  lider: 'bg-emerald-50 text-emerald-700',
+  padrino: 'bg-purple-50 text-purple-700',
+  gestor: 'bg-amber-50 text-amber-700',
+  digitador: 'bg-slate-100 text-slate-700',
+}
+import { Badge } from '../../../components/ui'
 
 const esValidoApi = (p: SimpatizanteApi) => p.departamento === DEPARTAMENTO_CAMPANA && p.municipio === MUNICIPIO_CAMPANA
 const validezDeApi = (p: SimpatizanteApi): Validez => {
@@ -93,31 +102,19 @@ function paginas(current: number, total: number): (number | '...')[] {
   return pages
 }
 
-export default function Directorio({ leaderMode = false }: { leaderMode?: boolean }) {
+// rolMode: vista de un rol (Líderes, Gestores…). Sin búsqueda muestra solo ese rol; al buscar
+// muestra a cualquier simpatizante para poder promoverlo.
+export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 'lider' : undefined }: { leaderMode?: boolean; rolMode?: RolSimpatizante }) {
   const {
     session, openPersona, liderFilter, setLiderFilter, directorioPreset, clearDirectorioPreset,
     borrarTodosSimpatizantes, simpatizantesApi, lideresApi, cargandoSimpatizantes, cargarSimpatizantesApi,
-    verSimpatizanteDetalle, eliminarSimpatizante,
   } = useApp()
   const [filtros, setFiltros] = useState<Filtros>({ ...DEFAULT_F, liderId: leaderMode ? 'all' : liderFilter })
   const [showFiltros, setShowFiltros] = useState(false)
   const [page, setPage] = useState(1)
   const [borrando, setBorrando] = useState(false)
-  const [eliminandoId, setEliminandoId] = useState<string | null>(null)
-  const puedeGestionar = session?.rol === 'admin' || session?.rol === 'padrino' || session?.rol === 'gestor'
-  const puedeEliminar = session?.rol === 'admin' || session?.rol === 'padrino'
   const validezLabel = (p: SimpatizanteApi) => validezDeApi(p) === 'valido' ? 'Válido' : 'Inválido'
-  const rolLabel = (p: SimpatizanteApi) => p.trazabilidad?.padrino ? 'Líder' : p.trazabilidad?.lider ? 'Padrino' : 'Candidato'
 
-  const eliminarFicha = async (p: { id: string; nombres: string; apellidos: string }) => {
-    if (!window.confirm(`¿Eliminar la ficha de ${p.nombres} ${p.apellidos}? Esta acción no se puede deshacer.`)) return
-    setEliminandoId(p.id)
-    try {
-      await eliminarSimpatizante(p.id)
-    } finally {
-      setEliminandoId(null)
-    }
-  }
   const nombreLiderApi = (id: string) => {
     const l = lideresApi.find((x) => x.id === id)
     return l ? `${l.nombres} ${l.apellidos}` : '—'
@@ -179,6 +176,9 @@ export default function Directorio({ leaderMode = false }: { leaderMode?: boolea
       if (directorioPreset.nivelVoto) partial.nivelVoto = directorioPreset.nivelVoto
       if (directorioPreset.puesto) partial.puesto = directorioPreset.puesto
       if (directorioPreset.mesa !== undefined) partial.mesa = String(directorioPreset.mesa)
+      for (const k of ['municipio', 'comuna', 'corregimiento', 'barrio', 'interes', 'grupoSocial', 'nivelAcademico'] as const) {
+        if (directorioPreset[k]) partial[k] = directorioPreset[k]
+      }
       patch(partial)
       clearDirectorioPreset()
     }
@@ -211,6 +211,7 @@ export default function Directorio({ leaderMode = false }: { leaderMode?: boolea
     if (f.profesion !== 'all') l = l.filter((p) => p.profesion === f.profesion)
     if (f.nivelAcademico !== 'all') l = l.filter((p) => p.nivelAcademico === f.nivelAcademico)
     if (f.posgrado !== 'all') l = l.filter((p) => p.posgrado === f.posgrado)
+    if (rolMode && !f.q.trim()) l = l.filter((p) => (p.rol ?? 'simpatizante') === rolMode)
     if (f.q.trim()) {
       const q = f.q.trim().toLowerCase()
       l = l.filter((p) =>
@@ -220,7 +221,7 @@ export default function Directorio({ leaderMode = false }: { leaderMode?: boolea
       )
     }
     return l.sort((a, b) => a.nombres.localeCompare(b.nombres))
-  }, [simpatizantesApi, filtros])
+  }, [simpatizantesApi, filtros, rolMode])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
   const current = Math.min(page, totalPages)
@@ -507,93 +508,75 @@ export default function Directorio({ leaderMode = false }: { leaderMode?: boolea
       )}
 
       {/* Tabla con agrupación de columnas: Residencia, Puesto de Votación y Día E */}
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white mb-4">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1500px] text-left text-sm hidden">
-            <thead className="sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
-              <tr><th rowSpan={2} className="sticky left-0 z-20 border-b border-gray-200 bg-gray-50 px-4 py-2.5 font-semibold whitespace-nowrap">Nombre</th><th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5 font-semibold whitespace-nowrap">Cédula</th><th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5 font-semibold whitespace-nowrap">Teléfono</th><th colSpan={4} className="border-b border-gray-200 bg-blue-50/60 px-4 py-1.5 text-center text-[11px] text-blue-700">Residencia</th><th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5 font-semibold whitespace-nowrap">Reporta a</th><th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5 font-semibold whitespace-nowrap">Planilla</th><th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5 font-semibold whitespace-nowrap">Rol</th><th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5 font-semibold whitespace-nowrap">Validez</th><th colSpan={4} className="border-b border-gray-200 bg-emerald-50/60 px-4 py-1.5 text-center text-[11px] text-emerald-700">Puesto de Votación</th><th className="border-b border-gray-200 bg-purple-50/60 px-4 py-1.5 text-center text-[11px] text-purple-700">Día E</th></tr>
-              <tr>{['Departamento','Municipio','Comuna/Correg.','Barrio','Dpto-Votación','Munic-Votación','Pto-Votación','Mesa-Votación','¿Ya votó?'].map((h) => <th key={h} className="border-b border-gray-200 px-4 py-2.5 font-semibold whitespace-nowrap">{h}</th>)}</tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">{paginado.map((p, i) => { const rol = rolLabel(p); const valido = validezDeApi(p) === 'valido'; const cell = (v: string | number | null | undefined) => v === null || v === undefined || v === '' ? <span className="text-gray-300">—</span> : v; return <tr key={p.id} className={`${i % 2 ? 'bg-gray-50/40' : 'bg-white'} hover:bg-gray-100/60`}><td className={`sticky left-0 z-10 px-4 py-3 ${i % 2 ? 'bg-gray-50/40' : 'bg-white'} whitespace-nowrap`}><button type="button" onClick={() => verSimpatizanteDetalle(p.id)} className="font-medium text-blue-700 hover:underline">{p.nombres} {p.apellidos}</button></td><td className="px-4 py-3 text-gray-600 whitespace-nowrap">{p.cedula}</td><td className="px-4 py-3 text-gray-600 whitespace-nowrap">{cell(p.telefono)}</td><td className="px-4 py-3 text-gray-600 whitespace-nowrap">{cell(p.departamento)}</td><td className="px-4 py-3 text-gray-600 whitespace-nowrap">{p.municipio}</td><td className="px-4 py-3 text-gray-600 whitespace-nowrap">{cell(p.zona === 'Urbana' ? p.comuna : p.corregimiento)}</td><td className="px-4 py-3 text-gray-600 whitespace-nowrap">{cell(p.barrio)}</td><td className="px-4 py-3 text-gray-600 whitespace-nowrap">{p.trazabilidad?.padrino?.nombre ?? p.trazabilidad?.lider?.nombre ?? <span className="italic text-gray-400">Raíz de la estructura</span>}</td><td className="px-4 py-3 text-gray-600 whitespace-nowrap">{cell(p.planillaCodigo)}</td><td className="px-4 py-3 text-gray-600 whitespace-nowrap"><Badge className={rol === 'Candidato' ? 'bg-rose-50 text-rose-700' : rol === 'Padrino' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}>{rol}</Badge></td><td className="px-4 py-3 text-gray-600 whitespace-nowrap"><Badge className={valido ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}>{valido ? 'Válido' : 'Inválido'}</Badge></td><td className="px-4 py-3 text-gray-600 whitespace-nowrap">{cell(p.puesto ? p.departamento : null)}</td><td className="px-4 py-3 text-gray-600 whitespace-nowrap">{cell(p.puesto ? p.municipio : null)}</td><td className="px-4 py-3 text-gray-600 whitespace-nowrap">{cell(p.puesto ? PUESTOS.find((x) => x.id === p.puesto)?.nombre ?? p.puesto : null)}</td><td className="px-4 py-3 text-gray-600 whitespace-nowrap">{cell(p.mesa)}</td><td className="px-4 py-3 text-gray-600 whitespace-nowrap"><input type="checkbox" checked={p.votoRegistrado} readOnly disabled className="h-4 w-4 rounded border-gray-300 text-blue-600 disabled:opacity-40" /></td></tr> })}</tbody>
-          </table>
-        </div>
-      </div>
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1500px] text-left text-sm">
             <thead className="sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
-              <tr><th rowSpan={2} className="sticky left-0 z-20 border-b border-gray-200 bg-gray-50 px-4 py-2.5 font-semibold whitespace-nowrap">Nombre</th><th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5 font-semibold whitespace-nowrap">Cédula</th><th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5 font-semibold whitespace-nowrap">Teléfono</th><th colSpan={4} className="border-b border-gray-200 bg-blue-50/60 px-4 py-1.5 text-center text-[11px] text-blue-700">Residencia</th><th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5 font-semibold whitespace-nowrap">Reporta a</th><th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5 font-semibold whitespace-nowrap">Planilla</th><th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5 font-semibold whitespace-nowrap">Rol</th><th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5 font-semibold whitespace-nowrap">Validez</th><th colSpan={4} className="border-b border-gray-200 bg-emerald-50/60 px-4 py-1.5 text-center text-[11px] text-emerald-700">Puesto de Votación</th><th className="border-b border-gray-200 bg-purple-50/60 px-4 py-1.5 text-center text-[11px] text-purple-700">Día E</th></tr><tr>{['Departamento','Municipio','Comuna/Correg.','Barrio','Dpto-Votación','Munic-Votación','Pto-Votación','Mesa-Votación','¿Ya votó?'].map((h) => <th key={h} className="border-b border-gray-200 px-4 py-2.5 font-semibold whitespace-nowrap">{h}</th>)}</tr>
-              <tr className="hidden">
-                {['Persona', 'Cédula', 'Departamento', 'Municipio', 'Comuna/Correg.', 'Barrio', 'Perfil', 'Líder', 'Nivel', 'Acciones'].map((h) => (
-                  <th key={h} className="text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500 px-2.5 py-2 border-b border-slate-200 whitespace-nowrap">
-                    {h}
-                  </th>
+              <tr>
+                <th rowSpan={2} className="sticky left-0 z-20 border-b border-gray-200 bg-gray-50 px-4 py-2.5 font-semibold whitespace-nowrap">Nombre</th>
+                <th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5 font-semibold whitespace-nowrap">Cédula</th>
+                <th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5 font-semibold whitespace-nowrap">Teléfono</th>
+                <th colSpan={4} className="border-b border-gray-200 bg-blue-50/60 px-4 py-1.5 text-center text-[11px] text-blue-700">Residencia</th>
+                <th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5 font-semibold whitespace-nowrap">Reporta a</th>
+                <th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5 font-semibold whitespace-nowrap">Planilla</th>
+                <th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5 font-semibold whitespace-nowrap">Rol</th>
+                <th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5 font-semibold whitespace-nowrap">Validez</th>
+                <th colSpan={4} className="border-b border-gray-200 bg-emerald-50/60 px-4 py-1.5 text-center text-[11px] text-emerald-700">Puesto de Votación</th>
+                <th className="border-b border-gray-200 bg-purple-50/60 px-4 py-1.5 text-center text-[11px] text-purple-700">Día E</th>
+              </tr>
+              <tr>
+                {['Departamento', 'Municipio', 'Comuna/Correg.', 'Barrio', 'Dpto-Votación', 'Munic-Votación', 'Pto-Votación', 'Mesa-Votación', '¿Ya votó?'].map((h) => (
+                  <th key={h} className="border-b border-gray-200 px-4 py-2.5 font-semibold whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-100">
               {paginado.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-2.5 py-10 text-slate-400 text-xs text-center">
-                    {cargandoSimpatizantes ? 'Cargando simpatizantes…' : 'Sin resultados para los filtros aplicados.'}
+                  <td colSpan={16} className="px-4 py-10 text-center text-xs text-slate-400">
+                    {cargandoSimpatizantes ? 'Cargando simpatizantes…' : rolMode && !filtros.q.trim() ? `Aún no hay nadie con rol ${ROL_SIMPATIZANTE_LABEL[rolMode]}. Busca un simpatizante por nombre o cédula para promoverlo.` : 'Sin resultados para los filtros aplicados.'}
                   </td>
                 </tr>
               )}
-              {paginado.map((p) => (
-                <tr key={p.id} className="border-b border-gray-100 bg-white hover:bg-gray-100/60">
-                  <td className="sticky left-0 z-10 bg-white px-4 py-3 text-sm whitespace-nowrap">
-                    <button onClick={() => verSimpatizanteDetalle(p.id)} className="whitespace-nowrap text-left font-medium text-blue-700 hover:underline">
-                      {p.nombres} {p.apellidos}
-                    </button>
-                  </td>
-                  <td className="px-2.5 py-1.5 font-mono text-slate-600 text-xs whitespace-nowrap">{p.cedula}</td>
-                  <td className="px-2.5 py-1.5 text-xs text-slate-600 whitespace-nowrap">{p.departamento}</td>
-                  <td className="px-2.5 py-1.5 text-xs text-slate-600 whitespace-nowrap">{p.municipio}</td>
-                  <td className="px-2.5 py-1.5 text-xs text-slate-600 whitespace-nowrap">{p.zona === 'Urbana' ? p.comuna : p.corregimiento}</td>
-                  <td className="px-2.5 py-1.5 text-xs text-slate-600 whitespace-nowrap">{p.barrio}</td>
-                  <td className="px-2.5 py-1.5">
-                    <div className="text-xs text-slate-700 whitespace-nowrap">{p.profesion || 'Sin profesión'}</div>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      <Badge className={nivelAcademicoTone(p.nivelAcademico)}>{p.nivelAcademico}</Badge>
-                      {p.posgrado !== 'Ninguno' && <Badge className="bg-purple-100 text-purple-700">{p.posgrado}</Badge>}
-                    </div>
-                  </td>
-                  <td className="px-2.5 py-1.5 text-xs text-slate-600 whitespace-nowrap">{nombreLiderApi(p.liderId)}</td>
-                  <td className="px-2.5 py-1.5 whitespace-nowrap">
-                    <Badge className={nivelTone(p.nivelVoto)}>{p.nivelVoto}</Badge>
-                  </td>
-                  <td className="px-2.5 py-1.5">
-                    <div className="flex items-center gap-0.5">
-                      <button
-                        onClick={() => verSimpatizanteDetalle(p.id)}
-                        title="Ver ficha completa"
-                        className="p-1 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-blue-600"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
+              {paginado.map((p, i) => {
+                const valido = validezDeApi(p) === 'valido'
+                const bg = i % 2 ? 'bg-gray-50' : 'bg-white'
+                const td = 'px-4 py-3 text-gray-600 whitespace-nowrap'
+                const cell = (v: string | number | null | undefined) =>
+                  v === null || v === undefined || v === '' ? <span className="text-gray-300">—</span> : v
+                return (
+                  <tr key={p.id} className={`${bg} hover:bg-gray-100/60`}>
+                    <td className={`sticky left-0 z-10 px-4 py-3 whitespace-nowrap ${bg}`}>
+                      <button type="button" onClick={() => openPersona({ mode: 'edit', personaId: p.id })} className="text-left font-medium text-blue-700 hover:underline">
+                        {p.nombres} {p.apellidos}
                       </button>
-                      {puedeGestionar && (
-                        <>
-                          <button
-                            onClick={() => openPersona({ mode: 'edit', personaId: p.id })}
-                            title={session?.rol === 'gestor' ? 'Completar o editar ficha' : 'Editar ficha'}
-                            className={session?.rol === 'gestor' ? 'rounded-lg bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100' : 'p-1 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-blue-600'}
-                          >
-                            {session?.rol === 'gestor' ? 'Completar' : <Pencil className="w-3.5 h-3.5" />}
-                          </button>
-                          {puedeEliminar && <button
-                            onClick={() => void eliminarFicha(p)}
-                            disabled={eliminandoId === p.id}
-                            title="Eliminar ficha"
-                            className="p-1 rounded-lg text-slate-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>}
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className={td}>{p.cedula}</td>
+                    <td className={td}>{cell(p.telefono)}</td>
+                    <td className={td}>{cell(p.departamento)}</td>
+                    <td className={td}>{cell(p.municipio)}</td>
+                    <td className={td}>{cell(p.zona === 'Urbana' ? p.comuna : p.corregimiento)}</td>
+                    <td className={td}>{cell(p.barrio)}</td>
+                    <td className={td}>
+                      {p.trazabilidad?.padrino?.nombre ?? p.trazabilidad?.lider?.nombre ?? <span className="italic text-gray-400">Raíz de la estructura</span>}
+                    </td>
+                    <td className={td}>{cell(p.planillaCodigo)}</td>
+                    <td className={td}>
+                      <Badge className={ROL_TONE[p.rol ?? 'simpatizante']}>{ROL_SIMPATIZANTE_LABEL[p.rol ?? 'simpatizante']}</Badge>
+                    </td>
+                    <td className={td}>
+                      <Badge className={valido ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}>{valido ? 'Válido' : 'Inválido'}</Badge>
+                    </td>
+                    <td className={td}>{cell(p.departamentoVotacion)}</td>
+                    <td className={td}>{cell(p.municipioVotacion)}</td>
+                    <td className={td}>{cell(p.puesto ? PUESTOS.find((x) => x.id === p.puesto)?.nombre ?? p.puesto : null)}</td>
+                    <td className={td}>{cell(p.mesa)}</td>
+                    <td className={td}>
+                      <input type="checkbox" checked={p.votoRegistrado} readOnly disabled className="h-4 w-4 rounded border-gray-300 text-blue-600 disabled:opacity-40" />
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

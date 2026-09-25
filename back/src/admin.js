@@ -139,6 +139,18 @@ export async function resetClavePadrinoAdmin(id) {
   return { password }
 }
 
+export const ROLES_SIMPATIZANTE = ['simpatizante', 'lider', 'padrino', 'gestor', 'digitador']
+
+// El rol no se concede a authenticated: se cambia con la service role tras verificar admin.
+export async function cambiarRolSimpatizanteAdmin(id, rol) {
+  if (!ROLES_SIMPATIZANTE.includes(rol)) throw new ApiError(422, 'Rol inválido.')
+  const rows = await adminRequest(`/rest/v1/simpatizantes?id=eq.${encodeURIComponent(id)}&select=id,rol`, {
+    method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ rol }),
+  })
+  if (!rows?.length) throw new ApiError(404, 'Simpatizante no encontrado.')
+  return { id: rows[0].id, rol: rows[0].rol }
+}
+
 export async function listarDigitadoresAdmin() {
   const rows = await adminRequest('/rest/v1/users?rol=eq.digitador&select=id,nombre,cedula,activo&order=nombre.asc')
   return Promise.all(rows.map(async (row) => {

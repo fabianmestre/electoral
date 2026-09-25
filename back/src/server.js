@@ -14,6 +14,7 @@ import { actualizarPadrinoAdmin, crearPadrinoAdmin, listarPadrinosAdmin, resetCl
 import { listarDigitadoresAdmin, crearDigitadorAdmin, actualizarDigitadorAdmin } from './admin.js'
 import { borrarTodosPadrinosAdmin } from './admin.js'
 import { actualizarGestorAdmin, crearGestorAdmin, listarGestoresAdmin } from './admin.js'
+import { cambiarRolSimpatizanteAdmin } from './admin.js'
 import { validarCapturaPlanilla } from './digitacion-planillas.js'
 
 const port = Number(process.env.PORT || 3002)
@@ -606,6 +607,12 @@ const server = createServer(async (request, response) => {
     if (idMatch && request.method === 'DELETE') {
       const { status, data } = await eliminarSimpatizante(request, idMatch[1])
       return send(status, data)
+    }
+    const rolMatch = pathname.match(new RegExp(`^/api/simpatizantes/(${UUID_RE})/rol$`))
+    if (rolMatch && request.method === 'PATCH') {
+      await requireAdmin(request)
+      const { rol } = await body(request)
+      return send(200, await cambiarRolSimpatizanteAdmin(rolMatch[1], rol))
     }
     const votoMatch = pathname.match(new RegExp(`^/api/simpatizantes/(${UUID_RE})/voto$`))
     if (votoMatch && request.method === 'POST') {
