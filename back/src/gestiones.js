@@ -104,7 +104,7 @@ export function serializeGestion(row) {
     creadoEn: row.creado_en,
     actualizadoEn: row.actualizado_en,
     simpatizante: s
-      ? { id: s.id, nombres: s.nombres, apellidos: s.apellidos, cedula: s.cedula, liderId: s.lider_id }
+      ? { id: s.id, nombres: s.nombres, apellidos: s.apellidos, cedula: s.cedula, liderId: s.lider_id, rol: s.rol ?? 'simpatizante' }
       : null,
   }
 }

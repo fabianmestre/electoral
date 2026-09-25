@@ -368,7 +368,7 @@ export interface GestionApi {
   creadoPor: string
   creadoEn: string
   actualizadoEn: string
-  simpatizante: { id: string; nombres: string; apellidos: string; cedula: string; liderId: string } | null
+  simpatizante: { id: string; nombres: string; apellidos: string; cedula: string; liderId: string; rol?: RolSimpatizante } | null
 }
 
 export type GestionApiInput = Omit<

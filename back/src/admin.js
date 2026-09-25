@@ -141,9 +141,75 @@ export async function resetClavePadrinoAdmin(id) {
 
 export const ROLES_SIMPATIZANTE = ['simpatizante', 'lider', 'padrino', 'gestor', 'digitador']
 
+// El rol Líder necesita su registro en public.lideres (meta, padrino y equipo vía lider_id).
+// Se crea sin correo, es decir sin cuenta de acceso; el acceso se habilita desde Credenciales.
+async function sincronizarLider(ficha, rol, adminId) {
+  const [lider] = await adminRequest(`/rest/v1/lideres?cedula=eq.${encodeURIComponent(ficha.cedula)}&select=id,activo`)
+  if (rol !== 'lider') {
+    if (lider?.activo) await adminRequest(`/rest/v1/lideres?id=eq.${lider.id}`, { method: 'PATCH', body: JSON.stringify({ activo: false }) })
+    return
+  }
+  if (lider) {
+    if (!lider.activo) await adminRequest(`/rest/v1/lideres?id=eq.${lider.id}`, { method: 'PATCH', body: JSON.stringify({ activo: true }) })
+    return
+  }
+  const padrinoId = ficha.trazabilidad?.padrino?.id
+  if (!padrinoId) throw new ApiError(422, 'No se pudo determinar el padrino de este simpatizante para ascenderlo a líder.')
+  await adminRequest('/rest/v1/lideres', {
+    method: 'POST', headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ nombres: ficha.nombres, apellidos: ficha.apellidos, cedula: ficha.cedula, meta: 0, padrino_id: padrinoId, creado_por: adminId }),
+  })
+}
+
+// El rol Padrino vive en public.users (lideres.padrino_id apunta ahí). Un padrino no inicia
+// sesión: se crea sin correo. No se le quita el rol mientras tenga líderes activos a cargo.
+async function sincronizarPadrino(ficha, rol) {
+  const [padrino] = await adminRequest(`/rest/v1/users?cedula=eq.${encodeURIComponent(ficha.cedula)}&rol=eq.padrino&select=id,activo`)
+  if (rol !== 'padrino') {
+    if (!padrino?.activo) return
+    const lideres = await adminRequest(`/rest/v1/lideres?padrino_id=eq.${padrino.id}&activo=is.true&select=id`)
+    if (lideres.length) throw new ApiError(409, `Tiene ${lideres.length} líder(es) a cargo. Reasígnalos a otro padrino antes de quitarle el rol.`)
+    await adminRequest(`/rest/v1/users?id=eq.${padrino.id}`, { method: 'PATCH', body: JSON.stringify({ activo: false }) })
+    return
+  }
+  if (padrino) {
+    if (!padrino.activo) await adminRequest(`/rest/v1/users?id=eq.${padrino.id}`, { method: 'PATCH', body: JSON.stringify({ activo: true }) })
+    return
+  }
+  await crearPadrinoAdmin({
+    nombre: `${ficha.nombres} ${ficha.apellidos}`.trim(), cedula: ficha.cedula, email: null,
+    celular: ficha.telefono || null, direccion: ficha.direccion || null, barrio: ficha.barrio || null,
+  })
+}
+
+// Gestor y digitador sí inician sesión: su cuenta (public.users + auth) usa el correo de la
+// ficha y la cédula como contraseña inicial. Si la persona ya tuvo una de esas cuentas se
+// reutiliza cambiando el rol, así el correo no choca con una cuenta existente.
+const ROLES_CUENTA = ['gestor', 'digitador']
+async function sincronizarCuenta(ficha, rol) {
+  const [cuenta] = await adminRequest(`/rest/v1/users?cedula=eq.${encodeURIComponent(ficha.cedula)}&rol=in.(${ROLES_CUENTA.join(',')})&select=id,rol,activo`)
+  if (!ROLES_CUENTA.includes(rol)) {
+    if (cuenta?.activo) await adminRequest(`/rest/v1/users?id=eq.${cuenta.id}`, { method: 'PATCH', body: JSON.stringify({ activo: false }) })
+    return
+  }
+  if (cuenta) {
+    await adminRequest(`/rest/v1/users?id=eq.${cuenta.id}`, { method: 'PATCH', body: JSON.stringify({ rol, activo: true }) })
+    return
+  }
+  if (!ficha.correo) throw new ApiError(422, `Para ascenderlo a ${rol === 'gestor' ? 'Gestor' : 'Digitador'} registra primero su correo en la ficha: con él iniciará sesión.`)
+  const crear = rol === 'gestor' ? crearGestorAdmin : crearDigitadorAdmin
+  await crear({ nombre: `${ficha.nombres} ${ficha.apellidos}`.trim(), email: ficha.correo, cedula: ficha.cedula })
+}
+
 // El rol no se concede a authenticated: se cambia con la service role tras verificar admin.
-export async function cambiarRolSimpatizanteAdmin(id, rol) {
+export async function cambiarRolSimpatizanteAdmin(id, rol, adminId) {
   if (!ROLES_SIMPATIZANTE.includes(rol)) throw new ApiError(422, 'Rol inválido.')
+  const [ficha] = await adminRequest(`/rest/v1/simpatizantes?id=eq.${encodeURIComponent(id)}&select=id,nombres,apellidos,cedula,telefono,correo,direccion,barrio,rol,trazabilidad`)
+  if (!ficha) throw new ApiError(404, 'Simpatizante no encontrado.')
+  // Padrino primero: si no se le puede quitar el rol, no se toca nada más.
+  if (ficha.rol === 'padrino' || rol === 'padrino') await sincronizarPadrino(ficha, rol)
+  if (ficha.rol === 'lider' || rol === 'lider') await sincronizarLider(ficha, rol, adminId)
+  if (ROLES_CUENTA.includes(ficha.rol) || ROLES_CUENTA.includes(rol)) await sincronizarCuenta(ficha, rol)
   const rows = await adminRequest(`/rest/v1/simpatizantes?id=eq.${encodeURIComponent(id)}&select=id,rol`, {
     method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ rol }),
   })

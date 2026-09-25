@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../store'
 import { CATEGORIAS } from '../data'
-import type { CategoriaGestion, EstadoGestion, GestionApiInput } from '../types'
+import { ROL_SIMPATIZANTE_LABEL } from '../types'
+import type { CategoriaGestion, EstadoGestion, GestionApiInput, SimpatizanteApi } from '../types'
 import { Field, Modal, inputCls } from './ui'
 import { hoyISO } from '../lib'
 
@@ -24,6 +25,65 @@ const emptyForm = (personaId: string, responsable: string): FormState => ({
   estado: 'Pendiente',
   responsable,
 })
+
+const GENERAL = '— Sin simpatizante (gestión general) —'
+const normalizar = (t: string) => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+
+// Selector de persona que se filtra escribiendo nombre o cédula.
+function PersonaPicker({ personas, value, onChange, detalle }: {
+  personas: SimpatizanteApi[]
+  value: string
+  onChange: (id: string) => void
+  detalle: (p: SimpatizanteApi) => string
+}) {
+  const [texto, setTexto] = useState('')
+  const [abierto, setAbierto] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const seleccionada = personas.find((p) => p.id === value)
+  const etiqueta = seleccionada ? `${seleccionada.nombres} ${seleccionada.apellidos}` : ''
+  const resultados = useMemo(() => {
+    const q = normalizar(texto.trim())
+    return personas
+      .filter((p) => !q || normalizar(`${p.nombres} ${p.apellidos} ${p.cedula}`).includes(q))
+      .sort((a, b) => a.nombres.localeCompare(b.nombres))
+      .slice(0, 50)
+  }, [personas, texto])
+  useEffect(() => {
+    const cerrar = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setAbierto(false) }
+    document.addEventListener('mousedown', cerrar)
+    return () => document.removeEventListener('mousedown', cerrar)
+  }, [])
+  const elegir = (id: string) => { onChange(id); setTexto(''); setAbierto(false) }
+  return (
+    <div ref={ref} className="relative">
+      <input
+        className={inputCls}
+        value={abierto ? texto : etiqueta}
+        placeholder="Escribe nombre o cédula…"
+        onFocus={() => { setTexto(''); setAbierto(true) }}
+        onChange={(e) => { setTexto(e.target.value); setAbierto(true) }}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') setAbierto(false)
+          if (e.key === 'Enter') { e.preventDefault(); if (resultados[0]) elegir(resultados[0].id) }
+        }}
+      />
+      {abierto && (
+        <ul className="absolute z-20 mt-1 max-h-[8.5rem] w-full overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 text-sm shadow-lg">
+          {!texto.trim() && <li><button type="button" onClick={() => elegir('')} className="w-full px-3 py-2 text-left text-slate-500 hover:bg-slate-50">{GENERAL}</button></li>}
+          {resultados.map((p) => (
+            <li key={p.id}>
+              <button type="button" onClick={() => elegir(p.id)} className={`w-full px-3 py-2 text-left hover:bg-blue-50 ${p.id === value ? 'bg-blue-50' : ''}`}>
+                <span className="block font-medium text-slate-800">{p.nombres} {p.apellidos}</span>
+                <span className="block text-xs text-slate-500">{detalle(p)}</span>
+              </button>
+            </li>
+          ))}
+          {resultados.length === 0 && <li className="px-3 py-2 text-slate-400">Sin coincidencias para “{texto}”.</li>}
+        </ul>
+      )}
+    </div>
+  )
+}
 
 export default function GestionForm() {
   const { gestionModal, closeGestion, session, simpatizantesApi, lideresApi, gestionesApi, crearGestionApi, editarGestionApi, notify } = useApp()
@@ -51,7 +111,7 @@ export default function GestionForm() {
         })
       }
     } else {
-      setForm(emptyForm(gestionModal.personaId ?? simpatizantesApi[0]?.id ?? '', session?.nombre ?? ''))
+      setForm(emptyForm(gestionModal.personaId ?? '', session?.nombre ?? ''))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gestionModal])
@@ -103,14 +163,12 @@ export default function GestionForm() {
     >
       <div className="space-y-3">
         <Field label="Persona (simpatizante / líder)">
-          <select className={inputCls} value={form.simpatizanteId} onChange={(e) => patch({ simpatizanteId: e.target.value })}>
-            <option value="">— Sin simpatizante (gestión general) —</option>
-            {simpatizantesApi.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nombres} {p.apellidos} — {nombreLiderApi(p.liderId)}
-              </option>
-            ))}
-          </select>
+          <PersonaPicker
+            personas={simpatizantesApi}
+            value={form.simpatizanteId}
+            onChange={(id) => patch({ simpatizanteId: id })}
+            detalle={(p) => `${ROL_SIMPATIZANTE_LABEL[p.rol ?? 'simpatizante']} · ${p.cedula}${p.rol === 'simpatizante' || !p.rol ? ` · ${nombreLiderApi(p.liderId)}` : ''}`}
+          />
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Fecha" required>

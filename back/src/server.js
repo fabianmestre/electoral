@@ -281,7 +281,7 @@ async function eliminarLider(request, id) {
   return { status: 200, data: { status: 'ok' } }
 }
 
-const GESTION_SELECT = '*,simpatizante:simpatizantes(id,nombres,apellidos,cedula,lider_id)'
+const GESTION_SELECT = '*,simpatizante:simpatizantes(id,nombres,apellidos,cedula,lider_id,rol)'
 
 async function crearGestion(request) {
   const { user, token } = await requireUser(request)
@@ -610,9 +610,9 @@ const server = createServer(async (request, response) => {
     }
     const rolMatch = pathname.match(new RegExp(`^/api/simpatizantes/(${UUID_RE})/rol$`))
     if (rolMatch && request.method === 'PATCH') {
-      await requireAdmin(request)
+      const { user } = await requireAdmin(request)
       const { rol } = await body(request)
-      return send(200, await cambiarRolSimpatizanteAdmin(rolMatch[1], rol))
+      return send(200, await cambiarRolSimpatizanteAdmin(rolMatch[1], rol, user.id))
     }
     const votoMatch = pathname.match(new RegExp(`^/api/simpatizantes/(${UUID_RE})/voto$`))
     if (votoMatch && request.method === 'POST') {

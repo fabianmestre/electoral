@@ -49,6 +49,7 @@ export type ViewId =
   | 'padrino-planillas'
   | 'padrino-simpatizantes'
   | 'padrinos'
+  | 'padrino-roles'
   | 'simpatizante-detalle'
   | 'gestion-lideres'
   | 'lider-directorio'

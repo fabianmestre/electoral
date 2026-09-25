@@ -116,6 +116,8 @@ export function validateSimpatizante(input, { partial = false } = {}) {
       continue
     }
     if (field === 'liderId') {
+      // La ficha de un padrino no tiene líder: al editarla se conserva el valor actual.
+      if (partial && (value === '' || value === null)) continue
       if (!isUuid(value)) errors[field] = 'Selecciona un líder válido.'
       else result[column] = value
       continue

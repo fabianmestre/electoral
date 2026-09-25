@@ -24,6 +24,10 @@ import {
 import { ROL_SIMPATIZANTE_LABEL } from '../../../types'
 import type { RolSimpatizante, SimpatizanteApi, Validez } from '../../../types'
 
+const ROL_PLURAL: Record<RolSimpatizante, string> = {
+  simpatizante: 'simpatizantes', lider: 'líderes', padrino: 'padrinos', gestor: 'gestores', digitador: 'digitadores',
+}
+
 const ROL_TONE: Record<RolSimpatizante, string> = {
   simpatizante: 'bg-blue-50 text-blue-700',
   lider: 'bg-emerald-50 text-emerald-700',
@@ -106,6 +110,7 @@ function paginas(current: number, total: number): (number | '...')[] {
 // muestra a cualquier simpatizante para poder promoverlo.
 export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 'lider' : undefined }: { leaderMode?: boolean; rolMode?: RolSimpatizante }) {
   const {
+    cambiarRolSimpatizante, padrinosApi, cargarPadrinosApi, cargarLideresApi, notify,
     session, openPersona, liderFilter, setLiderFilter, directorioPreset, clearDirectorioPreset,
     borrarTodosSimpatizantes, simpatizantesApi, lideresApi, cargandoSimpatizantes, cargarSimpatizantesApi,
   } = useApp()
@@ -113,6 +118,36 @@ export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 
   const [showFiltros, setShowFiltros] = useState(false)
   const [page, setPage] = useState(1)
   const [borrando, setBorrando] = useState(false)
+  const [cambiandoId, setCambiandoId] = useState<string | null>(null)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (rolMode === 'padrino' && session?.rol === 'admin') void cargarPadrinosApi() }, [rolMode])
+  // Quién depende de esta persona en la estructura (se muestra al pasar el cursor por "Quitar rol").
+  const aCargo = (p: SimpatizanteApi) => {
+    if (p.rol === 'padrino') {
+      const cuenta = padrinosApi.find((x) => x.cedula === p.cedula)
+      const n = cuenta ? lideresApi.filter((l) => l.activo && l.padrinoId === cuenta.id).length : 0
+      return `Tiene ${n} líder(es) a cargo`
+    }
+    if (p.rol === 'lider') {
+      const registro = lideresApi.find((l) => l.cedula === p.cedula)
+      const n = registro ? simpatizantesApi.filter((s) => s.liderId === registro.id && s.id !== p.id).length : 0
+      return `Tiene ${n} simpatizante(s) a cargo`
+    }
+    return undefined
+  }
+  const cambiarRol = async (p: SimpatizanteApi, rol: RolSimpatizante) => {
+    const accion = rol === 'simpatizante' ? `quitarle el rol ${ROL_SIMPATIZANTE_LABEL[p.rol]} a` : `promover a ${ROL_SIMPATIZANTE_LABEL[rol]} a`
+    if (!window.confirm(`¿Seguro que quieres ${accion} ${p.nombres} ${p.apellidos}?`)) return
+    setCambiandoId(p.id)
+    try {
+      if (await cambiarRolSimpatizante(p.id, rol)) {
+        notify(rol === 'simpatizante' ? 'Rol retirado' : `Ahora es ${ROL_SIMPATIZANTE_LABEL[rol]}`, 'success')
+        await Promise.all([cargarSimpatizantesApi(), cargarLideresApi(), rolMode === 'padrino' ? cargarPadrinosApi() : undefined])
+      }
+    } finally {
+      setCambiandoId(null)
+    }
+  }
   const validezLabel = (p: SimpatizanteApi) => validezDeApi(p) === 'valido' ? 'Válido' : 'Inválido'
 
   const nombreLiderApi = (id: string) => {
@@ -265,7 +300,7 @@ export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 
 
   return (
     <div>
-      {leaderMode && <p className="mb-3 text-xs text-gray-400">Por defecto ves a los líderes. Busca por nombre o cédula para encontrar cualquier simpatizante y promoverlo.</p>}
+      {rolMode && <p className="mb-3 text-xs text-gray-400">Por defecto ves a los {ROL_PLURAL[rolMode]}. Busca por nombre o cédula para encontrar cualquier simpatizante y promoverlo.</p>}
       {/* Barra superior */}
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="relative flex-1 min-w-[240px] max-w-md">
@@ -298,7 +333,7 @@ export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 
         <button type="button" className="shrink-0 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
           Columnas (16)
         </button>
-        {!leaderMode && session?.rol !== 'gestor' && <button onClick={() => openPersona({ mode: 'new' })} className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+        {!rolMode && session?.rol !== 'gestor' && <button onClick={() => openPersona({ mode: 'new' })} className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
           <Plus className="w-4 h-4" /> + Nuevo Simpatizante
         </button>}
       </div>
@@ -523,6 +558,7 @@ export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 
                 <th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5 font-semibold whitespace-nowrap">Validez</th>
                 <th colSpan={4} className="border-b border-gray-200 bg-emerald-50/60 px-4 py-1.5 text-center text-[11px] text-emerald-700">Puesto de Votación</th>
                 <th className="border-b border-gray-200 bg-purple-50/60 px-4 py-1.5 text-center text-[11px] text-purple-700">Día E</th>
+                {rolMode && <th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5" />}
               </tr>
               <tr>
                 {['Departamento', 'Municipio', 'Comuna/Correg.', 'Barrio', 'Dpto-Votación', 'Munic-Votación', 'Pto-Votación', 'Mesa-Votación', '¿Ya votó?'].map((h) => (
@@ -533,7 +569,7 @@ export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 
             <tbody className="divide-y divide-gray-100">
               {paginado.length === 0 && (
                 <tr>
-                  <td colSpan={16} className="px-4 py-10 text-center text-xs text-slate-400">
+                  <td colSpan={rolMode ? 17 : 16} className="px-4 py-10 text-center text-xs text-slate-400">
                     {cargandoSimpatizantes ? 'Cargando simpatizantes…' : rolMode && !filtros.q.trim() ? `Aún no hay nadie con rol ${ROL_SIMPATIZANTE_LABEL[rolMode]}. Busca un simpatizante por nombre o cédula para promoverlo.` : 'Sin resultados para los filtros aplicados.'}
                   </td>
                 </tr>
@@ -574,6 +610,13 @@ export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 
                     <td className={td}>
                       <input type="checkbox" checked={p.votoRegistrado} readOnly disabled className="h-4 w-4 rounded border-gray-300 text-blue-600 disabled:opacity-40" />
                     </td>
+                    {rolMode && (
+                      <td className="px-4 py-3 text-right">
+                        {session?.rol === 'admin' && (p.rol === rolMode
+                          ? <button type="button" disabled={cambiandoId === p.id} onClick={() => void cambiarRol(p, 'simpatizante')} title={aCargo(p)} className="whitespace-nowrap text-xs font-medium text-red-600 hover:underline disabled:opacity-50">Quitar rol</button>
+                          : <button type="button" disabled={cambiandoId === p.id} onClick={() => void cambiarRol(p, rolMode)} className="whitespace-nowrap text-xs font-medium text-blue-600 hover:underline disabled:opacity-50">Promover a {ROL_SIMPATIZANTE_LABEL[rolMode]}</button>)}
+                      </td>
+                    )}
                   </tr>
                 )
               })}

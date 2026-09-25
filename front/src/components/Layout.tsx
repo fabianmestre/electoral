@@ -29,6 +29,7 @@ import { Badge } from './ui'
 import Dashboard from '../modules/core/pages/Dashboard'
 import Lideres from '../modules/lideres/pages/LideresPage'
 import LiderDirectorioPage from '../modules/lideres/pages/LiderDirectorioPage'
+import PadrinoRolesPage from '../modules/padrinos/pages/PadrinoRolesPage'
 import Gestiones from '../modules/gestiones/pages/GestionesPage'
 import Comunicaciones from '../modules/gestiones/pages/ComunicacionesPage'
 import Logistica from '../modules/gestiones/pages/DiaEPage'
@@ -106,7 +107,8 @@ const TITLES: Record<ViewId, string> = {
   'padrino-dash': 'Mis Líderes',
   'padrino-planillas': 'Planillas',
   'padrino-simpatizantes': 'Simpatizantes de mis líderes',
-  padrinos: 'Gestión de Padrinos',
+  padrinos: 'Credenciales',
+  'padrino-roles': 'Padrinos',
   'gestion-lideres': 'Líderes',
   'lider-directorio': 'Líderes',
   gestores: 'Gestores',
@@ -156,6 +158,8 @@ function renderView(view: ViewId) {
       return <PadrinoSimpatizantes />
     case 'padrinos':
       return <PadrinosAdmin />
+    case 'padrino-roles':
+      return <PadrinoRolesPage />
   }
 }
 
@@ -207,7 +211,7 @@ export default function Layout() {
               <button type="button" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors w-full bg-slate-800 text-white"><Users className="h-5 w-5 shrink-0" /><span className="flex-1 text-left">Roles</span><ChevronsUp className="h-4 w-4" /></button>
               <div className="ml-4 mt-1 space-y-1 border-l border-slate-800 pl-4">
                 {([
-              ['padrinos', 'Padrino'], ['gestion-lideres', 'Líder'], ['simpatizantes', 'Simpatizante'], ['gestores', 'Gestor'], ['digitador', 'Digitador'],
+              ['padrino-roles', 'Padrino'], ['gestion-lideres', 'Líder'], ['simpatizantes', 'Simpatizante'], ['gestores', 'Gestor'], ['digitador', 'Digitador'],
                 ] as [ViewId, string][]).map(([id, label]) => <button key={id} onClick={() => { navigate(id); setOpen(false) }} className={`block w-full rounded-md px-3 py-2 text-sm text-left ${view === id ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>{label}</button>)}
               </div>
             </div>
