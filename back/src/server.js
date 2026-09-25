@@ -15,6 +15,7 @@ import { listarDigitadoresAdmin, crearDigitadorAdmin, actualizarDigitadorAdmin }
 import { borrarTodosPadrinosAdmin } from './admin.js'
 import { actualizarGestorAdmin, crearGestorAdmin, listarGestoresAdmin } from './admin.js'
 import { cambiarRolSimpatizanteAdmin } from './admin.js'
+import { cambiarAccesoAdmin, listarCredencialesAdmin, restablecerClaveAdmin } from './admin.js'
 import { validarCapturaPlanilla } from './digitacion-planillas.js'
 
 const port = Number(process.env.PORT || 3002)
@@ -618,6 +619,22 @@ const server = createServer(async (request, response) => {
     if (votoMatch && request.method === 'POST') {
       const { status, data } = await registrarVoto(request, votoMatch[1])
       return send(status, data)
+    }
+
+    if (pathname === '/api/credenciales' && request.method === 'GET') {
+      await requireAdmin(request)
+      return send(200, { items: await listarCredencialesAdmin() })
+    }
+    const credClaveMatch = pathname.match(new RegExp(`^/api/credenciales/(${UUID_RE})/clave$`))
+    if (credClaveMatch && request.method === 'POST') {
+      await requireAdmin(request)
+      return send(200, await restablecerClaveAdmin(credClaveMatch[1]))
+    }
+    const credMatch = pathname.match(new RegExp(`^/api/credenciales/(${UUID_RE})$`))
+    if (credMatch && request.method === 'PATCH') {
+      await requireAdmin(request)
+      const { activo } = await body(request)
+      return send(200, await cambiarAccesoAdmin(credMatch[1], activo))
     }
 
     if (pathname === '/api/usuarios' && request.method === 'GET') {

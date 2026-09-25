@@ -139,6 +139,43 @@ export async function resetClavePadrinoAdmin(id) {
   return { password }
 }
 
+// --- Credenciales: cuentas que inician sesión (líder, gestor, digitador) ---
+// El padrino no inicia sesión y el admin no se gestiona desde aquí.
+const ROLES_CREDENCIAL = ['lider', 'gestor', 'digitador']
+
+export async function listarCredencialesAdmin() {
+  const rows = await adminRequest(`/rest/v1/users?rol=in.(${ROLES_CREDENCIAL.join(',')})&select=id,nombre,cedula,rol,activo,creado_en&order=nombre.asc`)
+  // Un solo llamado a Auth para obtener los correos (usuario de acceso).
+  const auth = await adminRequest('/auth/v1/admin/users?per_page=1000')
+  const correos = new Map((auth?.users ?? []).map((u) => [u.id, u.email ?? null]))
+  return rows.map((r) => ({
+    id: r.id, nombre: r.nombre, cedula: r.cedula, rol: r.rol, activo: r.activo,
+    creadoEn: r.creado_en, email: correos.get(r.id) ?? null,
+  }))
+}
+
+async function credencial(id) {
+  const [row] = await adminRequest(`/rest/v1/users?id=eq.${encodeURIComponent(id)}&rol=in.(${ROLES_CREDENCIAL.join(',')})&select=id,rol,activo`)
+  if (!row) throw new ApiError(404, 'Cuenta no encontrada.')
+  return row
+}
+
+// Genera una clave temporal nueva. La anterior deja de servir; la nueva solo se muestra una vez.
+export async function restablecerClaveAdmin(id) {
+  await credencial(id)
+  const password = generarPassword()
+  await adminRequest(`/auth/v1/admin/users/${id}`, { method: 'PUT', body: JSON.stringify({ password }) })
+  return { password }
+}
+
+// Activa o desactiva el acceso a la plataforma. No cambia el rol ni borra datos.
+export async function cambiarAccesoAdmin(id, activo) {
+  if (typeof activo !== 'boolean') throw new ApiError(422, 'Indica si la cuenta queda activa.')
+  await credencial(id)
+  await adminRequest(`/rest/v1/users?id=eq.${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ activo }) })
+  return { id, activo }
+}
+
 export const ROLES_SIMPATIZANTE = ['simpatizante', 'lider', 'padrino', 'gestor', 'digitador']
 
 // El rol Líder necesita su registro en public.lideres (meta, padrino y equipo vía lider_id).
