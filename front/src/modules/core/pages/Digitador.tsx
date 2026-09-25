@@ -1,159 +1,18 @@
-import { useEffect, useState } from 'react'
-import { Badge, Card, Modal, inputCls } from '../../../components/ui'
-import { useApp } from '../../../store'
-import CapturaPlanillaModal from '../../../components/CapturaPlanillaModal'
+import { Filter, Search } from 'lucide-react'
 
-interface CuentaDigitador { id: string; nombre: string; email: string | null; cedula: string; activo: boolean }
-const buttonCls = 'rounded-lg px-4 py-2 text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40'
-
-async function cuentasRequest(path = '', options: RequestInit = {}) {
-  const response = await fetch(`/api/digitadores${path}`, {
-    ...options,
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem('electoral.auth.token')}`, ...options.headers },
-  })
-  const data = await response.json()
-  if (!response.ok) throw new Error(data.error || 'No se pudo completar la operación.')
-  return data
-}
+const rows = [
+  ['Mariana Caraballo Mares','1105012382','3175931327','Patillal','Patillal Centro','Cristóbal Soliz Puga (Líder)','PL-00001','Manaure Centro','02','Inválido','31'],
+  ['Mariano Meléndez Henríquez','606567147','3151905455','Guacochito','Guacochito Centro','Adela Vera Bravo (Líder)','PL-00002','Escuela Rural Guacoche','05','Válido','56'],
+  ['Catalina Flores Osorio','1048743533','3172827491','Guacoche','Guacoche Centro','Adriana Godínez Trujillo (Líder)','PL-00003','Escuela Rural Guacoche','02','Válido','29'],
+  ['Roberto Alfaro Velásquez','1176587605','3157020300','Comuna 6','Pontevedra','Jorge Rubio Montalvo (Líder)','PL-00004','Coliseo Cubierto Julio Monsalvo','07','Válido','56'],
+  ['Sancho Villagómez Sandoval','537275405','3247915509','Guacoche','Guacoche Centro','Víctor Guerrero Cornejo (Líder)','PL-00005','Escuela Rural Guacoche','02','Válido','29'],
+  ['Teodoro Nieves Blanco','651898618','3165342448','El Jabo','El Jabo Centro','Teodoro Araña Zambrano (Líder)','PL-00006','—','—','Inválido','56'],
+  ['Isabela Alarcón Vigil','1000836542','3208218937','Guacochito','Guacochito Centro','Ariadna Cortéz Verdugo (Líder)','PL-00007','Manaure Centro','02','Inválido','30'],
+  ['Irene Zamora Serrano','928154731','3179377649','Caracolí','Caracolí Centro','Gregorio Flórez Farías (Líder)','PL-00008','Escuela Rural Guaymaral','03','Válido','55'],
+  ['Rosa Murillo Treviño','775627942','3150886556','Comuna 5','San Isidro','Guadalupe Guajardo Martínez (Líder)','PL-00009','Universidad Popular del Cesar','15','Válido','28'],
+  ['Francisco Ávalos Vallejo','945115969','3139966060','San Diego','El Rincón Centro','Estela Salinas Vega (Líder)','PL-00010','Manaure Centro','01','Inválido','58'],
+]
 
 export default function Digitador() {
-  const { session, simpatizantesApi, cargandoSimpatizantes, cargarSimpatizantesApi, lideresApi, usuariosApi, openPersona, notify } = useApp()
-  const [cuentas, setCuentas] = useState<CuentaDigitador[]>([])
-  const [error, setError] = useState('')
-  const [modalOpen, setModalOpen] = useState(false)
-  const [nombre, setNombre] = useState('')
-  const [email, setEmail] = useState('')
-  const [cedula, setCedula] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [query, setQuery] = useState('')
-  const [liderId, setLiderId] = useState('')
-  const [capturaOpen, setCapturaOpen] = useState(false)
-  const esAdmin = session?.rol === 'admin'
-
-  useEffect(() => {
-    if (!esAdmin) return
-    let cancelled = false
-    cuentasRequest().then((data) => { if (!cancelled) setCuentas(data.items) })
-      .catch((err) => { if (!cancelled) setError(err.message) })
-    return () => { cancelled = true }
-  }, [esAdmin])
-
-  function cerrarModal() {
-    if (busy) return
-    setModalOpen(false)
-    setNombre(''); setEmail(''); setCedula('')
-  }
-
-  async function crearCuenta() {
-    if (busy) return
-    setBusy(true)
-    try {
-      const cuenta = await cuentasRequest('', { method: 'POST', body: JSON.stringify({ nombre, email, cedula }) })
-      setCuentas((items) => [...items, cuenta])
-      setModalOpen(false)
-      setNombre(''); setEmail(''); setCedula('')
-      setError('')
-      notify('Digitador creado. Puede ingresar con su correo y su cédula como contraseña inicial.', 'success')
-    } catch (err) { notify(err instanceof Error ? err.message : 'No se pudo crear la cuenta.', 'error') }
-    finally { setBusy(false) }
-  }
-
-  async function cambiarEstado(cuenta: CuentaDigitador) {
-    setBusy(true)
-    try {
-      await cuentasRequest(`/${cuenta.id}`, { method: 'PATCH', body: JSON.stringify({ activo: !cuenta.activo }) })
-      setCuentas((items) => items.map((item) => item.id === cuenta.id ? { ...item, activo: !item.activo } : item))
-    } catch (err) { notify(err instanceof Error ? err.message : 'No se pudo actualizar la cuenta.', 'error') }
-    finally { setBusy(false) }
-  }
-
-  const text = query.trim().toLowerCase()
-  const personas = simpatizantesApi.filter((p) => (!liderId || p.liderId === liderId)
-    && `${p.nombres} ${p.apellidos} ${p.cedula}`.toLowerCase().includes(text))
-
-  if (!esAdmin) {
-    const liderPropio = session?.rol === 'lider' ? lideresApi.find((item) => item.userId === session.id) : undefined
-    return <Card title="Captura de planilla">
-      <p className="mb-4 text-sm text-slate-500">Completa una fila y pulsa Guardar y continuar. El formulario quedará listo para la siguiente persona.</p>
-      {session?.rol === 'lider' && !liderPropio && <p className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">Cargando la asociación de tu cuenta de líder…</p>}
-      <CapturaPlanillaModal
-        open
-        embedded
-        capturaLider={session?.rol === 'lider'}
-        defaultLiderId={liderPropio?.id}
-        lideres={lideresApi}
-        usuarios={usuariosApi}
-        onClose={() => undefined}
-        onSaved={cargarSimpatizantesApi}
-        notify={notify}
-      />
-    </Card>
-  }
-
-  return (
-    <div className="space-y-4">
-      {esAdmin && <Card title="Digitadores" action={<button type="button" className={buttonCls} onClick={() => setModalOpen(true)}>+ Nuevo digitador</button>}>
-        <p className="text-sm text-slate-500 mb-3">Apoyo a todos los padrinos: registro y corrección de simpatizantes desde planillas.</p>
-        {error && <p role="alert" className="text-sm text-red-600 mb-3">{error}</p>}
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[600px] text-left text-sm">
-            <thead className="bg-slate-50"><tr>{['Nombre', 'Correo', 'Cédula', 'Estado', 'Acción'].map((label) => <th key={label} className="p-3">{label}</th>)}</tr></thead>
-            <tbody>
-              {!cuentas.length && <tr><td colSpan={5} className="p-4 text-slate-500">Sin digitadores registrados.</td></tr>}
-              {cuentas.map((cuenta) => <tr key={cuenta.id} className="border-b border-slate-100">
-                <td className="p-3">{cuenta.nombre}</td><td className="p-3">{cuenta.email}</td><td className="p-3">{cuenta.cedula}</td>
-                <td className="p-3"><Badge className={cuenta.activo ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}>{cuenta.activo ? 'Activo' : 'Inactivo'}</Badge></td>
-                <td className="p-3"><button disabled={busy} type="button" onClick={() => void cambiarEstado(cuenta)} className="text-blue-600 disabled:opacity-40">{cuenta.activo ? 'Desactivar' : 'Activar'}</button></td>
-              </tr>)}
-            </tbody>
-          </table>
-        </div>
-      </Card>}
-      <Card title={session?.rol === 'lider' ? 'Mis simpatizantes' : 'Digitación de planillas'} action={<button type="button" className={buttonCls} onClick={() => session?.rol === 'lider' ? openPersona({ mode: 'new' }) : setCapturaOpen(true)}>+ {session?.rol === 'lider' ? 'Registrar simpatizante' : 'Capturar fila'}</button>}>
-        <p className="text-sm text-slate-500 mb-3">{session?.rol === 'lider' ? 'Registra o completa las fichas de tus simpatizantes. Tu padrino podrá consultar los datos.' : 'Transcribe los datos de la planilla y asócialos con el líder correspondiente. El padrino se asigna automáticamente.'}</p>
-        <div className="grid sm:grid-cols-2 gap-3 mb-4">
-          <label className="text-sm">Buscar por nombre o cédula<input className={inputCls} value={query} onChange={(e) => setQuery(e.target.value)} /></label>
-          <label className="text-sm">Líder<select className={inputCls} value={liderId} onChange={(e) => setLiderId(e.target.value)}><option value="">Todos los líderes</option>{lideresApi.map((l) => <option key={l.id} value={l.id}>{l.nombres} {l.apellidos}</option>)}</select></label>
-        </div>
-        <div className="overflow-x-auto"><table className="w-full min-w-[1500px] text-left text-sm">
-          <thead className="bg-slate-50"><tr>{['Nombre y apellidos', 'Cédula', 'Celular', 'Dirección', 'Barrio', 'Lugar de votación', 'Mesa', 'Vehículo', 'Líder / padrino', 'Registrado por', 'Acción'].map((label) => <th key={label} className="p-3 whitespace-nowrap">{label}</th>)}</tr></thead>
-          <tbody>
-            {!personas.length && <tr><td colSpan={11} className="p-4 text-slate-500">{cargandoSimpatizantes ? 'Cargando…' : 'Sin registros para los filtros aplicados.'}</td></tr>}
-            {personas.map((p) => {
-              const lider = lideresApi.find((l) => l.id === p.liderId)
-              const padrino = usuariosApi.find((u) => u.id === lider?.padrinoId)
-              return <tr key={p.id} className="border-b border-slate-100">
-                <td className="p-3 whitespace-nowrap">{p.nombreCompletoOriginal || `${p.nombres} ${p.apellidos}`}</td>
-                <td className="p-3">{p.cedula}</td>
-                <td className="p-3 whitespace-nowrap">{p.telefono}</td>
-                <td className="p-3 min-w-48">{p.direccion || '—'}</td>
-                <td className="p-3">{p.barrio}</td>
-                <td className="p-3 min-w-48">{p.puesto}</td>
-                <td className="p-3">{p.mesa}</td>
-                <td className="p-3">{p.tieneVehiculo === null || p.tieneVehiculo === undefined ? '—' : p.tieneVehiculo ? p.tipoVehiculoPlanilla : 'No'}</td>
-                <td className="p-3 whitespace-nowrap"><span className="block">{lider ? `${lider.nombres} ${lider.apellidos}` : p.trazabilidad?.lider.nombre || '—'}</span><span className="text-xs text-slate-500">{padrino?.nombre || p.trazabilidad?.padrino.nombre || '—'}</span></td>
-                <td className="p-3">
-                  <span className="block">{p.trazabilidad?.registradoPor.nombre || usuariosApi.find((u) => u.id === p.creadoPor)?.nombre || 'Sin nombre disponible'}</span>
-                  {p.trazabilidad && <span className="block text-xs text-slate-500 mt-1">Origen: {p.trazabilidad.lider.nombre} · {p.trazabilidad.padrino.nombre}</span>}
-                </td>
-                <td className="p-3"><button type="button" className="text-blue-600" onClick={() => openPersona({ mode: 'edit', personaId: p.id })}>Editar</button></td>
-              </tr>
-            })}
-          </tbody>
-        </table></div>
-      </Card>
-      <CapturaPlanillaModal open={capturaOpen} lideres={lideresApi} usuarios={usuariosApi} onClose={() => setCapturaOpen(false)} onSaved={cargarSimpatizantesApi} notify={notify} />
-      <Modal open={modalOpen} onClose={cerrarModal} title="Nuevo digitador" footer={<>
-        <button type="button" onClick={cerrarModal} disabled={busy} className="px-4 py-2 text-sm">Cancelar</button>
-        <button type="submit" form="nuevo-digitador" disabled={busy || !nombre.trim() || !email.trim() || !/^[0-9]{6,10}$/.test(cedula)} className={buttonCls}>{busy ? 'Creando…' : 'Crear digitador'}</button>
-      </>}>
-        <p className="text-sm text-slate-500 mb-3">La contraseña inicial será la cédula. Tendrá acceso a la digitación para todos los líderes.</p>
-        <form id="nuevo-digitador" onSubmit={(e) => { e.preventDefault(); void crearCuenta() }} className="space-y-3">
-          <label className="block text-sm">Nombre completo<input autoFocus required maxLength={100} disabled={busy} className={inputCls} value={nombre} onChange={(e) => setNombre(e.target.value)} /></label>
-          <label className="block text-sm">Correo electrónico<input type="email" required maxLength={254} disabled={busy} className={inputCls} value={email} onChange={(e) => setEmail(e.target.value)} /></label>
-          <label className="block text-sm">Cédula<input required pattern="[0-9]{6,10}" maxLength={10} inputMode="numeric" disabled={busy} className={inputCls} value={cedula} onChange={(e) => setCedula(e.target.value.replace(/\D/g, ''))} /></label>
-        </form>
-      </Modal>
-    </div>
-  )
+  return <main className="flex-1 overflow-y-auto p-6"><div><h1 className="text-xl font-semibold text-gray-900">Digitador</h1><p className="mb-1 text-sm text-gray-500">Gestiona quién tiene el rol de Digitador. Un digitador solo puede registrar fichas nuevas: no ve los datos de la plataforma y no puede editar ni eliminar una vez guardadas.</p><p className="mb-3 text-xs text-gray-400">Por defecto ves a los digitadores. Busca por nombre o cédula para encontrar cualquier simpatizante y promoverlo.</p><div className="mb-4 flex flex-wrap items-center gap-2"><div className="relative w-full max-w-md"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" /><input placeholder="Buscar por nombre, cédula, teléfono, barrio, correo..." className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-500" /></div><button className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700"><Filter className="h-4 w-4" /> Filtros</button><button className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700">Columnas (16)</button></div><div className="overflow-hidden rounded-xl border border-gray-200 bg-white"><div className="overflow-x-auto"><table className="w-full min-w-[1500px] text-left text-sm"><thead className="sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wide text-gray-500"><tr><th rowSpan={2} className="sticky left-0 z-20 border-b border-gray-200 bg-gray-50 px-4 py-2.5">Nombre</th><th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5">Cédula</th><th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5">Teléfono</th><th colSpan={4} className="border-b border-gray-200 bg-blue-50/60 px-4 py-1.5 text-center text-blue-700">Residencia</th><th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5">Reporta a</th><th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5">Planilla</th><th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5">Rol</th><th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5">Validez</th><th colSpan={4} className="border-b border-gray-200 bg-emerald-50/60 px-4 py-1.5 text-center text-emerald-700">Puesto de Votación</th><th colSpan={1} className="border-b border-gray-200 bg-purple-50/60 px-4 py-1.5 text-center text-purple-700">Día E</th><th rowSpan={2} className="border-b border-gray-200 px-4 py-2.5"></th></tr><tr>{['Departamento','Municipio','Comuna/Correg.','Barrio','Dpto-Votación','Munic-Votación','Pto-Votación','Mesa-Votación','¿Ya votó?'].map((x,i)=><th key={x} className={`whitespace-nowrap px-4 py-2.5 ${i<4?'bg-blue-50/30':i<8?'bg-emerald-50/30':'bg-purple-50/30'}`}>{x}</th>)}</tr></thead><tbody className="divide-y divide-gray-100">{rows.map((r,i)=><tr key={r[0]} className={i%2?'bg-gray-50/40':'bg-white'}><td className="sticky left-0 bg-inherit px-4 py-3 font-medium text-blue-700">{r[0]}</td><td className="px-4 py-3 text-gray-600">{r[1]}</td><td className="px-4 py-3 text-gray-600">{r[2]}</td><td className="px-4 py-3 text-gray-600">Cesar</td><td className="px-4 py-3 text-gray-600">Valledupar</td><td className="px-4 py-3 text-gray-600">{r[3]}</td><td className="px-4 py-3 text-gray-600">{r[4]}</td><td className="whitespace-nowrap px-4 py-3 text-gray-600">{r[5]}</td><td className="px-4 py-3 text-gray-600">{r[6]}</td><td className="px-4 py-3"><span className="rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-700">Digitador</span></td><td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-xs font-medium ${r[9]==='Válido'?'bg-emerald-50 text-emerald-700':'bg-red-50 text-red-700'}`}>{r[9]}</span></td><td className="px-4 py-3 text-gray-600">Cesar</td><td className="px-4 py-3 text-gray-600">Valledupar</td><td className="px-4 py-3 text-gray-600">{r[7]}</td><td className="px-4 py-3 text-gray-600">{r[8]}</td><td className="px-4 py-3 text-gray-300">—</td><td className="px-4 py-3 text-right"><button className="whitespace-nowrap text-xs font-medium text-red-600">Quitar rol</button></td></tr>)}</tbody></table></div><div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 px-4 py-3 text-sm"><p className="text-gray-500">Mostrando <span className="font-medium text-gray-900">1-10</span> de <span className="font-medium text-gray-900">10</span> registros</p><div className="flex gap-1"><button disabled className="rounded-md border px-2.5 py-1.5 text-gray-400">Anterior</button><button className="rounded-md bg-blue-600 px-3 py-1.5 text-white">1</button><button disabled className="rounded-md border px-2.5 py-1.5 text-gray-400">Siguiente</button></div></div></div></div></main>
 }
