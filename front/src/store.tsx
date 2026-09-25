@@ -50,6 +50,7 @@ export type ViewId =
   | 'padrinos'
   | 'simpatizante-detalle'
   | 'gestion-lideres'
+  | 'lider-directorio'
   | 'gestores'
 
 export type ToastType = 'success' | 'info' | 'error' | 'warn'

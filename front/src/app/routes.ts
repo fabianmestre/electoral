@@ -20,6 +20,7 @@ export const ROUTES: Record<ViewId, string> = {
   padrinos: '/roles/padrino',
   'simpatizante-detalle': '/roles/simpatizante/detalle',
   'gestion-lideres': '/roles/lider/gestion',
+  'lider-directorio': '/roles/lider/directorio',
   gestores: '/roles/gestor',
 }
 

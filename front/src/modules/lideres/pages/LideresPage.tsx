@@ -1,186 +1,32 @@
-import { useEffect } from 'react'
-import { AlertTriangle } from 'lucide-react'
+import { ArrowRight, CircleHelp, Flag, Map, Users } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useApp } from '../../../store'
-import { DEPARTAMENTO_CAMPANA, MUNICIPIO_CAMPANA } from '../../../data'
-import { fmtCOP } from '../../../lib'
-import type { LiderApi, SimpatizanteApi } from '../../../types'
-import { Badge, Card, Donut, GroupedBars, Legend, ProgressBar } from '../../../components/ui'
+import Directorio from '../../simpatizantes/pages/DirectorioPage'
 
-const PALETA = ['#6366f1', '#10b981', '#f59e0b', '#0ea5e9', '#8b5cf6', '#f43f5e', '#14b8a6']
-
-const esValidoApi = (p: SimpatizanteApi) => p.departamento === DEPARTAMENTO_CAMPANA && p.municipio === MUNICIPIO_CAMPANA
-
+const barrios = ['San Martín', 'Rincón de Ziruma', 'Los Ángeles', 'San Francisco', 'San Isidro', 'Villa del Rosario', 'El Prado', 'El Cerrito', 'La Nevada', 'Mayales']
+const coloresBarrios = ['#2563eb', '#7c3aed', '#0d9488', '#f59e0b', '#dc2626', '#059669', '#db2777', '#4f46e5', '#65a30d', '#0891b2']
+const lideres = [
+  ['Alberto Armendáriz Vera', 106, 100, 6, '22%', 'Amarillo'], ['Marilú Ojeda Soliz', 72, 65, 7, '31%', 'Amarillo'], ['Gabriel Abrego Rivera', 34, 30, 4, '40%', 'Amarillo'], ['Norma Solano Naranjo', 13, 10, 3, '20%', 'Amarillo'], ['María Alejandro Lira', 12, 9, 3, '44%', 'Amarillo'], ['Olivia Flórez Olivares', 18, 8, 10, '38%', 'Amarillo'], ['Luis Coronado Chapa', 8, 8, 0, '0%', 'Verde'], ['Luisa Roybal Mata', 10, 8, 2, '38%', 'Amarillo'], ['Guadalupe Peralta Montalvo', 14, 7, 7, '29%', 'Amarillo'], ['Víctor Rascón Madrigal', 9, 7, 2, '14%', 'Verde'],
+] as const
+function Kpi({ title, value, icon }: { title: string; value: string; icon: 'users'|'map'|'flag'|'help' }) { const Icon = icon === 'users' ? Users : icon === 'map' ? Map : icon === 'flag' ? Flag : CircleHelp; return <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"><div className="flex items-start justify-between gap-2"><p className="text-xs font-medium uppercase tracking-wide text-gray-500">{title}</p><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white"><Icon className="h-4 w-4" /></span></div><p className="mt-2 text-2xl font-semibold text-gray-900">{value}</p></div> }
 export default function Lideres() {
-  const {
-    simpatizantesApi, lideresApi, gestionesApi, cargarSimpatizantesApi, cargarLideresApi, cargarGestionesApi,
-    setLiderFilter, navigate, irADirectorio,
-  } = useApp()
-
+  const { navigate } = useApp()
   useEffect(() => {
-    void cargarSimpatizantesApi()
-    void cargarLideresApi()
-    void cargarGestionesApi()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const totalDe = (lid: string) => simpatizantesApi.filter((p) => p.liderId === lid).length
-  const firmesDe = (lid: string) => simpatizantesApi.filter((p) => p.liderId === lid && p.nivelVoto === 'Firme').length
-  const firmesValidosDe = (lid: string) => simpatizantesApi.filter((p) => p.liderId === lid && p.nivelVoto === 'Firme' && esValidoApi(p)).length
-  const invalidosDe = (lid: string) => simpatizantesApi.filter((p) => p.liderId === lid && !esValidoApi(p)).length
-  const gestionesDeLider = (lid: string) => gestionesApi.filter((g) => g.simpatizante?.liderId === lid).length
-  const invertidoLider = (lid: string) =>
-    gestionesApi.filter((g) => g.simpatizante?.liderId === lid).reduce((s, g) => s + (Number(g.monto) || 0), 0)
-
-  const lideres: LiderApi[] = lideresApi
-  const groups = lideres.map((l) => l.nombres)
-  const donaBase = lideres.map((l, i) => ({
-    label: `${l.nombres} ${l.apellidos.split(' ')[0]}`,
-    value: totalDe(l.id),
-    color: PALETA[i % PALETA.length],
-  }))
-
-  return (
-    <div>
-      <p className="text-sm text-slate-500 mb-4">
-        Monitoreo de <b>meta vs votos firmes válidos</b> (solo electores de Valledupar cuentan). Los registros fuera del
-        municipio o del departamento se marcan como <b>error del líder</b>.{' '}
-        <span className="text-slate-400">Haz clic en los números para ver a las personas en el Directorio.</span>
-      </p>
-
-      {lideres.length === 0 ? (
-        <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-sm text-slate-400">
-          Sin líderes registrados todavía. Créalos en el módulo Líderes.
-        </div>
-      ) : (
-        <>
-          {/* Gráficas de comportamiento */}
-          <div className="grid lg:grid-cols-2 gap-4 mb-4">
-            <Card title="Base por líder (cantidad)">
-              <div className="flex items-center gap-4">
-                <div className="w-40 h-40 shrink-0">
-                  <Donut data={donaBase} />
-                </div>
-                <div className="flex-1">
-                  <Legend data={donaBase} />
-                </div>
-              </div>
-            </Card>
-            <Card title="Firmes válidos vs Inválidos (calidad del trabajo)">
-              <GroupedBars
-                groups={groups}
-                series={[
-                  { label: 'Firmes válidos', color: '#10b981', values: lideres.map((l) => firmesValidosDe(l.id)) },
-                  { label: 'Inválidos', color: '#ef4444', values: lideres.map((l) => invalidosDe(l.id)) },
-                ]}
-              />
-            </Card>
-          </div>
-
-          <div className="mb-4">
-            <Card title="Meta vs Firmes válidos (avance)">
-              <GroupedBars
-                groups={groups}
-                series={[
-                  { label: 'Meta', color: '#cbd5e1', values: lideres.map((l) => l.meta) },
-                  { label: 'Firmes válidos', color: '#6366f1', values: lideres.map((l) => firmesValidosDe(l.id)) },
-                ]}
-              />
-            </Card>
-          </div>
-
-          {/* Tabla */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1080px] text-left">
-                <thead className="bg-slate-50">
-                  <tr>
-                    {['Líder', 'Meta', 'Registrados', 'Firmes', 'Firmes válidos', 'Inválidos', 'Gestiones', 'Avance', 'Invertido', 'Acciones'].map((h) => (
-                      <th key={h} className="text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500 px-3 py-2.5 border-b border-slate-200 whitespace-nowrap">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {lideres.map((l) => {
-                    const total = totalDe(l.id)
-                    const firmes = firmesDe(l.id)
-                    const firmesV = firmesValidosDe(l.id)
-                    const invalidos = invalidosDe(l.id)
-                    const ges = gestionesDeLider(l.id)
-                    const pct = l.meta > 0 ? Math.min(100, Math.round((firmesV / l.meta) * 100)) : 0
-                    return (
-                      <tr key={l.id} className="hover:bg-slate-50 border-b border-slate-100">
-                        <td className="px-3 py-2.5">
-                          <div className="font-bold text-slate-900">{l.nombres} {l.apellidos}</div>
-                          <div className="text-[11px] text-slate-500">{l.territorio || '—'}</div>
-                          <Badge className={l.activo ? 'bg-blue-100 text-blue-700 mt-1' : 'bg-slate-200 text-slate-600 mt-1'}>
-                            {l.activo ? 'Activo' : 'Inactivo'}
-                          </Badge>
-                        </td>
-                        <td className="px-3 py-2.5 text-sm font-semibold">{l.meta}</td>
-                        <td className="px-3 py-2.5 text-sm">
-                          <button onClick={() => irADirectorio({ liderId: l.id })} className="text-blue-600 hover:underline" title="Ver en el directorio">
-                            {total}
-                          </button>
-                        </td>
-                        <td className="px-3 py-2.5 text-sm">
-                          <button onClick={() => irADirectorio({ liderId: l.id, nivelVoto: 'Firme' })} className="text-blue-600 hover:underline" title="Ver firmes en el directorio">
-                            {firmes}
-                          </button>
-                        </td>
-                        <td className="px-3 py-2.5 text-sm font-semibold">
-                          <button onClick={() => irADirectorio({ liderId: l.id, nivelVoto: 'Firme', validez: 'valido' })} className="text-emerald-700 hover:underline" title="Ver firmes válidos en el directorio">
-                            {firmesV}
-                          </button>
-                        </td>
-                        <td className="px-3 py-2.5">
-                          {invalidos === 0 ? (
-                            <span className="text-slate-400 text-sm">0</span>
-                          ) : (
-                            <button onClick={() => irADirectorio({ liderId: l.id, validez: 'invalido' })} className="text-red-600 hover:underline font-semibold inline-flex items-center gap-1" title="Ver inválidos en el directorio">
-                              <AlertTriangle className="w-3.5 h-3.5" /> {invalidos}
-                            </button>
-                          )}
-                        </td>
-                        <td className="px-3 py-2.5 text-sm">{ges}</td>
-                        <td className="px-3 py-2.5 min-w-[140px]">
-                          <div className="flex justify-between text-xs mb-1">
-                            <span className="text-slate-500">{firmesV} / {l.meta}</span>
-                            <span className="font-semibold">{pct}%</span>
-                          </div>
-                          <ProgressBar pct={pct} color={pct >= 100 ? 'bg-emerald-500' : pct >= 50 ? 'bg-blue-500' : 'bg-amber-500'} />
-                        </td>
-                        <td className="px-3 py-2.5 text-sm text-amber-700">{fmtCOP(invertidoLider(l.id))}</td>
-                        <td className="px-3 py-2.5 whitespace-nowrap">
-                          <button
-                            onClick={() => {
-                              setLiderFilter(l.id)
-                              navigate('directorio')
-                            }}
-                            className="text-xs text-blue-600 hover:underline"
-                          >
-                            Simpatizantes
-                          </button>
-                          <button
-                            onClick={() => {
-                              setLiderFilter(l.id)
-                              navigate('gestiones')
-                            }}
-                            className="text-xs text-blue-600 hover:underline ml-2"
-                          >
-                            Gestiones
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  )
+    const onClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (target.textContent?.trim() === 'Directorio' && target.closest('.mt-4')) {
+        event.preventDefault()
+        navigate('lider-directorio')
+      }
+    }
+    document.addEventListener('click', onClick)
+    return () => document.removeEventListener('click', onClick)
+  }, [navigate])
+  const [metric, setMetric] = useState('barrio'); const [leader, setLeader] = useState('Alberto Armendáriz Vera')
+  return <main className="flex-1 overflow-y-auto p-6"><div className="mx-auto max-w-[1400px]"><div className="mb-6"><h1 className="text-xl font-semibold text-gray-900">Líder</h1><p className="text-sm text-gray-500">Dashboard y directorio — promueve o quita el rol desde la tabla</p><div className="mt-4 flex gap-6 border-b border-gray-200"><a className="border-b-2 border-blue-600 px-1 pb-3 text-sm font-medium text-blue-600">Dashboard</a><a className="border-b-2 border-transparent px-1 pb-3 text-sm font-medium text-gray-500">Directorio</a></div></div><div className="space-y-8">
+    <section><div className="grid grid-cols-2 gap-4 md:grid-cols-4"><Kpi title="Total de líderes" value="60" icon="users" /><Kpi title="Circunscripción Inválida" value="Ver detalle" icon="map" /><Kpi title="Cumplimiento de Metas" value="Ver detalle" icon="flag" /><Kpi title="Alerta de decisión" value="Ver detalle" icon="help" /></div><div className="mt-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-sm font-semibold text-gray-800">Gestión individual del líder</p><p className="text-xs text-gray-400">Equipo de 106 simpatizante(s) — solo residentes de Valledupar</p></div><div className="flex flex-wrap gap-2"><select value={leader} onChange={e=>setLeader(e.target.value)} className="rounded-lg border border-gray-300 px-2 py-1 text-xs">{lideres.map(x=><option key={x[0]}>{x[0]}</option>)}</select><select value={metric} onChange={e=>setMetric(e.target.value)} className="rounded-lg border border-gray-300 px-2 py-1 text-xs"><option value="barrio">Simpatizantes por barrio</option><option value="corregimiento">Simpatizantes por corregimiento</option><option value="puesto">Simpatizantes por puesto de votación</option><option value="validez">Validez y nivel de decisión</option><option value="avance">Avance de meta</option></select></div></div><div className="mt-4 space-y-2">{barrios.map((name,i)=><div key={name} className="flex items-center gap-3 text-xs"><span className="w-36 shrink-0 text-right text-gray-500">{name}</span><div className="h-6 flex-1 rounded bg-gray-50"><div className="h-6 rounded" style={{width:`${100-i*8}%`, backgroundColor: coloresBarrios[i]}} /></div><span className="w-8 text-gray-500">{106-i*9}</span></div>)}</div></div></section>
+    <section><div className="mb-1 flex items-center gap-2"><p className="text-sm font-semibold text-gray-700">Alertas de calidad de dato</p><span className="rounded-full bg-slate-900 px-2 py-0.5 text-xs font-semibold text-white">8</span></div><p className="mb-3 text-xs text-gray-400">Vista general de los líderes con alguna alerta — incluye datos fuera de jurisdicción, puesto/mesa sin diligenciar y teléfonos duplicados.</p><div className="overflow-hidden rounded-xl border border-gray-200 bg-white"><table className="w-full text-left text-sm"><thead className="bg-slate-900 text-xs uppercase tracking-wide text-white"><tr><th className="px-4 py-2.5">Líder</th><th className="px-4 py-2.5 text-center">N°</th><th className="px-4 py-2.5">Motivos</th></tr></thead><tbody className="divide-y divide-gray-100">{['Víctor Rascón Madrigal','Jordi Gámez Llamas','Santiago Estévez Delgadillo','Josep Ramírez Naranjo','Joaquín Delafuente Pacheco','Luisa Roybal Mata','Carlota Moya Reynoso','Martín Irizarry Burgos'].map((x,i)=><tr key={x}><td className="px-4 py-2.5 font-medium text-gray-800">{x}</td><td className="px-4 py-2.5 text-center"><span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">1</span></td><td className="px-4 py-2.5 text-gray-600">{i%2?'1 teléfono repetido entre simpatizantes de su equipo':'Datos fuera de circunscripción — revisar información'}</td></tr>)}</tbody></table></div></section>
+    <section><div className="mb-1 flex flex-wrap items-center justify-between gap-2"><div className="flex items-center gap-2"><p className="text-sm font-semibold text-gray-700">Ranking de Rendimiento de Líderes</p><span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">7 Verde</span><span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">31 Amarillo</span><span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700">22 Rojo</span></div><button className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline">Ver los 60 líderes <ArrowRight className="h-3 w-3" /></button></div><p className="mb-3 text-xs text-gray-400">Ordenado por votos válidos aportados — el semáforo compara a cada líder contra el promedio de la campaña.</p><div className="overflow-x-auto rounded-xl border border-gray-200 bg-white"><table className="w-full text-left text-xs"><thead className="bg-gray-50 uppercase tracking-wide text-gray-500"><tr>{['#','Líder','Registrados','Válidos','Inválidos','% Indecisos','Conflicto','Estado'].map(h=><th key={h} className="px-3 py-2 font-semibold">{h}</th>)}</tr></thead><tbody className="divide-y divide-gray-100">{lideres.map((x,i)=><tr key={x[0]} className="hover:bg-gray-50"><td className="px-3 py-2 text-gray-600">{i+1}</td><td className="px-3 py-2 font-medium text-gray-900">{x[0]}</td><td className="px-3 py-2 text-gray-600">{x[1]}</td><td className="px-3 py-2 text-gray-600">{x[2]}</td><td className="px-3 py-2 text-gray-600">{x[3]}</td><td className="px-3 py-2 text-gray-600">{x[4]}</td><td className="px-3 py-2 text-gray-600">{i<4?'1':'—'}</td><td className="px-3 py-2"><span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${x[5]==='Verde'?'bg-emerald-50 text-emerald-700':'bg-amber-50 text-amber-700'}`}>{x[5]}</span></td></tr>)}</tbody></table></div></section>
+    <section><div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-sm font-semibold text-gray-800">Panorama grupal de líderes</p><p className="text-xs text-gray-400">Cómo se agrupan los líderes según su desempeño — haz clic en una barra para ver el directorio</p></div><select className="rounded-lg border border-gray-300 px-2 py-1 text-xs"><option>Rango de votos</option><option>Líderes por puesto de votación</option><option>Por Padrino</option></select></div><p className="mb-1 mt-3 text-[11px] text-gray-400">Haz clic en una barra para ver el detalle.</p><div className="flex h-72 items-end justify-between gap-2 border-b border-l border-gray-300 px-4 pt-4">{[['Hasta 5',1],['6–10',19],['11–15',1],['16–20',1],['21–30',1],['31–50',1],['51–70',1],['71–100',1],['100+',1]].map(([label,value])=><button key={String(label)} type="button" className="group flex h-full flex-1 flex-col items-center justify-end gap-2" title={`Líderes: ${value}`}><span className="text-xs text-gray-500 opacity-0 group-hover:opacity-100">{value}</span><span className="w-full rounded-t bg-blue-600 transition hover:bg-blue-700" style={{height:`${Number(value)/19*88+4}%`}} /><span className="w-16 -rotate-45 origin-top text-[11px] text-gray-500">{label}</span></button>)}</div><div className="mt-4 flex items-center justify-center gap-2 text-xs text-blue-600"><span className="h-3 w-3 rounded-sm bg-blue-600" /> Líderes</div></div></section>
+  </div></div></main>
 }

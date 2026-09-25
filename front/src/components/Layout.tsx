@@ -28,6 +28,7 @@ import { nombrePadrino } from '../data'
 import { Badge } from './ui'
 import Dashboard from '../modules/core/pages/Dashboard'
 import Lideres from '../modules/lideres/pages/LideresPage'
+import LiderDirectorioPage from '../modules/lideres/pages/LiderDirectorioPage'
 import Gestiones from '../modules/gestiones/pages/GestionesPage'
 import Comunicaciones from '../modules/gestiones/pages/ComunicacionesPage'
 import Logistica from '../modules/gestiones/pages/DiaEPage'
@@ -43,7 +44,6 @@ import PadrinoDash from '../modules/padrinos/pages/DashboardPage'
 import PadrinoPlanillas from '../modules/padrinos/pages/PlanillasPage'
 import PadrinoSimpatizantes from '../modules/padrinos/pages/SimpatizantesPage'
 import PadrinosAdmin from '../modules/core/pages/PadrinosAdmin'
-import GestionLideres from '../modules/lideres/pages/GestionPage'
 import Digitador from '../modules/core/pages/Digitador'
 import GestoresAdmin from '../modules/core/pages/GestoresAdmin'
 import AccountMenu from './AccountMenu'
@@ -108,6 +108,7 @@ const TITLES: Record<ViewId, string> = {
   'padrino-simpatizantes': 'Simpatizantes de mis líderes',
   padrinos: 'Gestión de Padrinos',
   'gestion-lideres': 'Líderes',
+  'lider-directorio': 'Líderes',
   gestores: 'Gestores',
 }
 
@@ -144,7 +145,9 @@ function renderView(view: ViewId) {
     case 'simpatizante-detalle':
       return <SimpatizanteDetalle />
     case 'gestion-lideres':
-      return <GestionLideres />
+      return <Lideres />
+    case 'lider-directorio':
+      return <LiderDirectorioPage />
     case 'padrino-dash':
       return <PadrinoDash />
     case 'padrino-planillas':

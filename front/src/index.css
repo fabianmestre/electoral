@@ -28,6 +28,17 @@ body {
   display: none;
 }
 
+/* Orden visual del dashboard de líderes: el panorama va después de la gestión individual. */
+.mx-auto.max-w-\[1400px\] > .space-y-8 {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+.mx-auto.max-w-\[1400px\] > .space-y-8 > section:nth-child(1) { order: 1; }
+.mx-auto.max-w-\[1400px\] > .space-y-8 > section:nth-child(2) { order: 3; }
+.mx-auto.max-w-\[1400px\] > .space-y-8 > section:nth-child(3) { order: 4; }
+.mx-auto.max-w-\[1400px\] > .space-y-8 > section:nth-child(4) { order: 2; }
+
 @keyframes fadeIn {
   from {
     opacity: 0;

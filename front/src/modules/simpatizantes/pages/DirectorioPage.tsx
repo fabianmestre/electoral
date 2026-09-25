@@ -93,13 +93,13 @@ function paginas(current: number, total: number): (number | '...')[] {
   return pages
 }
 
-export default function Directorio() {
+export default function Directorio({ leaderMode = false }: { leaderMode?: boolean }) {
   const {
     session, openPersona, liderFilter, setLiderFilter, directorioPreset, clearDirectorioPreset,
     borrarTodosSimpatizantes, simpatizantesApi, lideresApi, cargandoSimpatizantes, cargarSimpatizantesApi,
     verSimpatizanteDetalle, eliminarSimpatizante,
   } = useApp()
-  const [filtros, setFiltros] = useState<Filtros>({ ...DEFAULT_F, liderId: liderFilter })
+  const [filtros, setFiltros] = useState<Filtros>({ ...DEFAULT_F, liderId: leaderMode ? 'all' : liderFilter })
   const [showFiltros, setShowFiltros] = useState(false)
   const [page, setPage] = useState(1)
   const [borrando, setBorrando] = useState(false)
@@ -264,6 +264,7 @@ export default function Directorio() {
 
   return (
     <div>
+      {leaderMode && <p className="mb-3 text-xs text-gray-400">Por defecto ves a los líderes. Busca por nombre o cédula para encontrar cualquier simpatizante y promoverlo.</p>}
       {/* Barra superior */}
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="relative flex-1 min-w-[240px] max-w-md">
@@ -296,7 +297,7 @@ export default function Directorio() {
         <button type="button" className="shrink-0 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
           Columnas (16)
         </button>
-        {session?.rol !== 'gestor' && <button onClick={() => openPersona({ mode: 'new' })} className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+        {!leaderMode && session?.rol !== 'gestor' && <button onClick={() => openPersona({ mode: 'new' })} className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
           <Plus className="w-4 h-4" /> + Nuevo Simpatizante
         </button>}
       </div>
