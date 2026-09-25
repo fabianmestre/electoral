@@ -3,15 +3,18 @@ import {
   Car,
   ChevronsLeft,
   ChevronsRight,
+  ChevronsUp,
   ClipboardList,
   GraduationCap,
   Handshake,
+  KeyRound,
   LayoutDashboard,
   Menu,
   // MapPin,
   RotateCcw,
   Send,
   ShieldCheck,
+  Flag,
   Trophy,
   UserCog,
   UserPlus,
@@ -23,25 +26,26 @@ import { useApp, type ViewId } from '../store'
 import type { UserRole } from '../types'
 import { nombrePadrino } from '../data'
 import { Badge } from './ui'
-import Dashboard from '../views/Dashboard'
-import Lideres from '../views/Lideres'
-import Gestiones from '../views/Gestiones'
-import Comunicaciones from '../views/Comunicaciones'
-import Logistica from '../views/Logistica'
-import Censo from '../views/Censo'
-import Directorio from '../views/Directorio'
-import Talento from '../views/Talento'
-import Legal from '../views/Legal'
-import ConsultaPuesto from '../views/ConsultaPuesto'
+import Dashboard from '../modules/core/pages/Dashboard'
+import Lideres from '../modules/lideres/pages/LideresPage'
+import Gestiones from '../modules/gestiones/pages/GestionesPage'
+import Comunicaciones from '../modules/gestiones/pages/ComunicacionesPage'
+import Logistica from '../modules/gestiones/pages/DiaEPage'
+import Censo from '../modules/core/pages/Censo'
+import Directorio from '../modules/simpatizantes/pages/DirectorioPage'
+import Simpatizantes from '../modules/simpatizantes/pages/DashboardPage'
+import Talento from '../modules/core/pages/Talento'
+import Legal from '../modules/core/pages/Legal'
+import ConsultaPuesto from '../modules/core/pages/ConsultaPuesto'
 import Perfil from './Perfil'
-import SimpatizanteDetalle from '../views/SimpatizanteDetalle'
-import PadrinoDash from '../views/PadrinoDash'
-import PadrinoPlanillas from '../views/PadrinoPlanillas'
-import PadrinoSimpatizantes from '../views/PadrinoSimpatizantes'
-import PadrinosAdmin from '../views/PadrinosAdmin'
-import GestionLideres from '../views/GestionLideres'
-import Digitador from '../views/Digitador'
-import GestoresAdmin from '../views/GestoresAdmin'
+import SimpatizanteDetalle from '../modules/simpatizantes/pages/DetallePage'
+import PadrinoDash from '../modules/padrinos/pages/DashboardPage'
+import PadrinoPlanillas from '../modules/padrinos/pages/PlanillasPage'
+import PadrinoSimpatizantes from '../modules/padrinos/pages/SimpatizantesPage'
+import PadrinosAdmin from '../modules/core/pages/PadrinosAdmin'
+import GestionLideres from '../modules/lideres/pages/GestionPage'
+import Digitador from '../modules/core/pages/Digitador'
+import GestoresAdmin from '../modules/core/pages/GestoresAdmin'
 import AccountMenu from './AccountMenu'
 
 interface NavItem {
@@ -94,6 +98,7 @@ const TITLES: Record<ViewId, string> = {
   logistica: 'Centro de Mando — Día E',
   censo: 'División Electoral',
   directorio: 'Directorio de Simpatizantes',
+  simpatizantes: 'Simpatizante',
   talento: 'Mapa de Talento',
   legal: 'Cumplimiento Legal',
   perfil: 'Ficha Técnica',
@@ -127,7 +132,9 @@ function renderView(view: ViewId) {
     case 'censo':
       return <Censo />
     case 'directorio':
-      return <Directorio />
+      return window.location.pathname === '/roles/simpatizante/directorio' ? <Simpatizantes /> : <Directorio />
+    case 'simpatizantes':
+      return <Simpatizantes />
     case 'talento':
       return <Talento />
     case 'legal':
@@ -155,6 +162,7 @@ export default function Layout() {
   const [collapsed, setCollapsed] = useState(false)
   if (!session) return null
   const items = NAV[session.rol]
+  const adminSidebar = session.rol === 'admin'
 
   const topBadge =
     session.rol === 'admin'
@@ -173,11 +181,11 @@ export default function Layout() {
     <div className="min-h-screen">
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 w-64 flex flex-col bg-slate-900 text-slate-200 z-40 transition-all ${
+        className={`fixed inset-y-0 left-0 w-52 flex flex-col bg-slate-900 text-slate-200 z-40 transition-all ${
           open ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0 ${collapsed ? 'lg:w-16' : 'lg:w-64'}`}
       >
-        <div className={`flex items-center gap-3 h-16 shrink-0 border-b border-slate-800 ${collapsed ? 'lg:justify-center lg:px-0' : 'px-5'}`}>
+        <div className={`flex items-center gap-3 h-[84px] shrink-0 border-b border-slate-800 ${collapsed ? 'lg:justify-center lg:px-0' : 'px-4'}`}>
           <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
             <ShieldCheck className="w-5 h-5" />
           </div>
@@ -185,12 +193,26 @@ export default function Layout() {
             <div className="font-bold text-white text-sm leading-tight truncate">Concejo Valledupar</div>
             <div className="text-[10px] text-slate-400">Cesar · CRM Electoral</div>
           </div>
-          <button className="lg:hidden text-slate-400" onClick={() => setOpen(false)}>
-            <X className="w-5 h-5" />
+          <button className="text-slate-400 hover:text-white" onClick={() => collapsed ? setCollapsed(false) : setCollapsed(true)} aria-label={collapsed ? 'Expandir menú' : 'Contraer menú'}>
+            {collapsed ? <ChevronsRight className="w-5 h-5" /> : <ChevronsLeft className="w-5 h-5" />}
           </button>
+          <button className="lg:hidden text-slate-400" onClick={() => setOpen(false)}><X className="w-5 h-5" /></button>
         </div>
-        <nav className="px-3 py-4 space-y-1 overflow-y-auto flex-1 min-h-0">
-          {items.map((it) => {
+        <nav className="p-3 space-y-1 overflow-y-auto flex-1 min-h-0">
+          {adminSidebar && !collapsed ? <>
+            <div>
+              <button type="button" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors w-full bg-slate-800 text-white"><Users className="h-5 w-5 shrink-0" /><span className="flex-1 text-left">Roles</span><ChevronsUp className="h-4 w-4" /></button>
+              <div className="ml-4 mt-1 space-y-1 border-l border-slate-800 pl-4">
+                {([
+              ['padrinos', 'Padrino'], ['gestion-lideres', 'Líder'], ['simpatizantes', 'Simpatizante'], ['gestores', 'Gestor'], ['digitador', 'Digitador'],
+                ] as [ViewId, string][]).map(([id, label]) => <button key={id} onClick={() => { navigate(id); setOpen(false) }} className={`block w-full rounded-md px-3 py-2 text-sm text-left ${view === id ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>{label}</button>)}
+              </div>
+            </div>
+            <div className="my-3 border-t border-slate-800" />
+            {([
+              ['gestiones', 'Gestiones', Handshake], ['comunicaciones', 'Comunicaciones', Send], ['logistica', 'Día-E', Flag], ['padrinos', 'Credenciales', KeyRound],
+            ] as [ViewId, string, LucideIcon][]).map(([id, label, Icon]) => <button key={`${id}-${label}`} onClick={() => { navigate(id); setOpen(false) }} className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors w-full ${view === id ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}><Icon className="h-5 w-5 shrink-0" />{label}</button>)}
+          </> : items.map((it) => {
             const Icon = it.icon
             const active = view === it.id
             return (

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Pencil, Plus, Trash2, Users } from 'lucide-react'
-import { useApp } from '../store'
-import type { LiderApi, LiderApiInput } from '../types'
-import { Badge, Field, Modal, inputCls } from '../components/ui'
-import DeleteAllButton from '../components/DeleteAllButton'
+import { useApp } from '../../../store'
+import type { LiderApi, LiderApiInput } from '../../../types'
+import { Badge, Field, Modal, inputCls } from '../../../components/ui'
+import DeleteAllButton from '../../../components/DeleteAllButton'
 
 interface FormState {
   nombres: string

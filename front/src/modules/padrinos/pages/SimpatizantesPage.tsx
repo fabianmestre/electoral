@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Plus, Search } from 'lucide-react'
-import { useApp } from '../store'
-import { Badge, nivelTone } from '../components/ui'
+import { useApp } from '../../../store'
+import { Badge, nivelTone } from '../../../components/ui'
 
 export default function PadrinoSimpatizantes() {
   const { simpatizantesApi, lideresApi, session, openPersona } = useApp()

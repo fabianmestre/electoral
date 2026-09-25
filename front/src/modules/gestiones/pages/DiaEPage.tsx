@@ -1,10 +1,10 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { Activity, Car, CheckCircle2, ChevronLeft, ChevronRight, Clock, RefreshCw, Search, Users } from 'lucide-react'
-import { useApp } from '../store'
-import { DEPARTAMENTO_CAMPANA, MUNICIPIO_CAMPANA } from '../data'
-import type { SimpatizanteApi } from '../types'
-import { Badge, Bars, Card, Donut, Kpi, Legend, ProgressBar } from '../components/ui'
-import Censo from './Censo'
+import { useApp } from '../../../store'
+import { DEPARTAMENTO_CAMPANA, MUNICIPIO_CAMPANA } from '../../../data'
+import type { SimpatizanteApi } from '../../../types'
+import { Badge, Bars, Card, Donut, Kpi, Legend, ProgressBar } from '../../../components/ui'
+import Censo from '../../core/pages/Censo'
 
 const NIVEL_COLORS: Record<string, string> = { Firme: '#10b981', Indeciso: '#f59e0b', 'En Riesgo': '#f43f5e' }
 

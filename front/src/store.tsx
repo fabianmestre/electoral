@@ -28,6 +28,7 @@ import type {
 import { generarEstado, LS_KEY, esValido, getPersona } from './data'
 import { hoyISO, uid } from './lib'
 import { restaurarSesion } from './authSession'
+import { ROUTES, viewFromPath } from './app/routes'
 
 export type ViewId =
   | 'digitador'
@@ -39,6 +40,7 @@ export type ViewId =
   | 'logistica'
   | 'censo'
   | 'directorio'
+  | 'simpatizantes'
   | 'talento'
   | 'legal'
   | 'perfil'
@@ -191,7 +193,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setAuthLoading(true)
     setAuthAttempt((attempt) => attempt + 1)
   }
-  const [view, setView] = useState<ViewId>('dashboard')
+  const [view, setView] = useState<ViewId>(() => viewFromPath(window.location.pathname) ?? 'dashboard')
   const [perfilId, setPerfilId] = useState<string | null>(null)
   const [personaModal, setPersonaModal] = useState<PersonaModalState | null>(null)
   const [gestionModal, setGestionModal] = useState<GestionModalState | null>(null)
@@ -231,7 +233,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const applySession = (u: Usuario) => {
     setSession(u)
     setPerfilId(null)
-    setView(u.rol === 'admin' ? 'dashboard' : u.rol === 'padrino' ? 'padrino-dash' : u.rol === 'digitador' || u.rol === 'lider' ? 'digitador' : u.rol === 'gestor' ? 'directorio' : 'comunicaciones')
+    const routeView = viewFromPath(window.location.pathname)
+    setView(routeView ?? (u.rol === 'admin' ? 'dashboard' : u.rol === 'padrino' ? 'padrino-dash' : u.rol === 'digitador' || u.rol === 'lider' ? 'digitador' : u.rol === 'gestor' ? 'directorio' : 'comunicaciones'))
   }
 
   const cargarSimpatizantesApi = async () => {
@@ -640,6 +643,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const navigate = (v: ViewId) => {
     if (v !== 'perfil') setPerfilId(null)
+    const route = ROUTES[v]
+    if (window.location.pathname !== route) window.history.pushState({}, '', route)
     setView(v)
   }
 

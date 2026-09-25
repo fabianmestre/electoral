@@ -4,6 +4,8 @@ import Layout from './components/Layout'
 import PersonaForm from './components/PersonaForm'
 import GestionForm from './components/GestionForm'
 import { ToastView } from './components/ui'
+import LoadingView from './views/LoadingView'
+import ErrorView from './views/ErrorView'
 
 export default function App() {
   const { session, authLoading, authError, retryAuth } = useApp()

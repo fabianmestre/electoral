@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Filter, Search, Send, X } from 'lucide-react'
-import { useApp } from '../store'
+import { useApp } from '../../../store'
 import {
   BARRIOS,
   CATEGORIAS,
@@ -24,10 +24,10 @@ import {
   municipiosDeDepartamento,
   nombreLider,
   puestosDeBarrio,
-} from '../data'
-import type { Canal, FiltrosEnvio } from '../types'
-import { fmtFechaHora } from '../lib'
-import { Badge, Card, Modal } from '../components/ui'
+} from '../../../data'
+import type { Canal, FiltrosEnvio } from '../../../types'
+import { fmtFechaHora } from '../../../lib'
+import { Badge, Card, Modal } from '../../../components/ui'
 
 const DEFAULT_FILTROS: FiltrosEnvio = {
   liderId: 'all',

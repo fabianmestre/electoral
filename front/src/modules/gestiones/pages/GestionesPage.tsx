@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Filter, Plus, Search, Trash2, X } from 'lucide-react'
-import { useApp } from '../store'
-import { CATEGORIAS } from '../data'
-import { fmtCOP, fmtFecha } from '../lib'
-import { Badge, Bars, Card, Donut, estadoTone, Legend } from '../components/ui'
+import { useApp } from '../../../store'
+import { CATEGORIAS } from '../../../data'
+import { fmtCOP, fmtFecha } from '../../../lib'
+import { Badge, Bars, Card, Donut, estadoTone, Legend } from '../../../components/ui'
 
 const CAT_COLORS: Record<string, string> = {
   Salud: '#6366f1',

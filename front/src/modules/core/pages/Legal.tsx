@@ -1,7 +1,7 @@
 import { ShieldCheck, ShieldAlert, Wallet, BadgePercent } from 'lucide-react'
-import { useApp } from '../store'
-import { fmtCOP, fmtFechaHora } from '../lib'
-import { Badge, Card, Kpi } from '../components/ui'
+import { useApp } from '../../../store'
+import { fmtCOP, fmtFechaHora } from '../../../lib'
+import { Badge, Card, Kpi } from '../../../components/ui'
 
 export default function Legal() {
   const { db } = useApp()

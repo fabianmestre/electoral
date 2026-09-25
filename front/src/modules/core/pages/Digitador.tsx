@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Badge, Card, Modal, inputCls } from '../components/ui'
-import { useApp } from '../store'
-import CapturaPlanillaModal from '../components/CapturaPlanillaModal'
+import { Badge, Card, Modal, inputCls } from '../../../components/ui'
+import { useApp } from '../../../store'
+import CapturaPlanillaModal from '../../../components/CapturaPlanillaModal'
 
 interface CuentaDigitador { id: string; nombre: string; email: string | null; cedula: string; activo: boolean }
 const buttonCls = 'rounded-lg px-4 py-2 text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40'

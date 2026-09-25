@@ -1,10 +1,10 @@
 import { useEffect } from 'react'
 import { AlertTriangle } from 'lucide-react'
-import { useApp } from '../store'
-import { DEPARTAMENTO_CAMPANA, MUNICIPIO_CAMPANA } from '../data'
-import { fmtCOP } from '../lib'
-import type { LiderApi, SimpatizanteApi } from '../types'
-import { Badge, Card, Donut, GroupedBars, Legend, ProgressBar } from '../components/ui'
+import { useApp } from '../../../store'
+import { DEPARTAMENTO_CAMPANA, MUNICIPIO_CAMPANA } from '../../../data'
+import { fmtCOP } from '../../../lib'
+import type { LiderApi, SimpatizanteApi } from '../../../types'
+import { Badge, Card, Donut, GroupedBars, Legend, ProgressBar } from '../../../components/ui'
 
 const PALETA = ['#6366f1', '#10b981', '#f59e0b', '#0ea5e9', '#8b5cf6', '#f43f5e', '#14b8a6']
 

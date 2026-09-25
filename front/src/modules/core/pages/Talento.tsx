@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Award, BadgeCheck, ChevronLeft, ChevronRight, GraduationCap, Search, Wrench } from 'lucide-react'
-import { useApp } from '../store'
-import { DEPARTAMENTO_CAMPANA, MUNICIPIO_CAMPANA, NIVELES_ACADEMICOS, POSGRADOS } from '../data'
-import type { SimpatizanteApi, Validez } from '../types'
-import { Badge, Kpi, nivelAcademicoTone, validezLabel, validezTone } from '../components/ui'
+import { useApp } from '../../../store'
+import { DEPARTAMENTO_CAMPANA, MUNICIPIO_CAMPANA, NIVELES_ACADEMICOS, POSGRADOS } from '../../../data'
+import type { SimpatizanteApi, Validez } from '../../../types'
+import { Badge, Kpi, nivelAcademicoTone, validezLabel, validezTone } from '../../../components/ui'
 
 const PER_PAGE = 50
 

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useApp } from '../store'
-import { Badge, Card, Modal } from '../components/ui'
-import type { PadrinoApi } from '../types'
-import DeleteAllButton from '../components/DeleteAllButton'
+import { useApp } from '../../../store'
+import { Badge, Card, Modal } from '../../../components/ui'
+import type { PadrinoApi } from '../../../types'
+import DeleteAllButton from '../../../components/DeleteAllButton'
 
 const inputCls2 = 'border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:border-blue-500'
 

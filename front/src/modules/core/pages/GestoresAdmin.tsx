@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Badge, Card, Modal, inputCls } from '../components/ui'
-import { useApp } from '../store'
+import { Badge, Card, Modal, inputCls } from '../../../components/ui'
+import { useApp } from '../../../store'
 
 interface Gestor { id: string; nombre: string; email: string | null; cedula: string; activo: boolean }
 const buttonCls = 'rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-40'

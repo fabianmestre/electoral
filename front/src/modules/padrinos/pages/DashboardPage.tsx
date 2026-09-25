@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import { CheckCircle2, ClipboardList, FileWarning, Users } from 'lucide-react'
-import { useApp } from '../store'
-import { camposFaltantes, lideresDePadrino } from '../data'
-import { Badge, Card, Kpi } from '../components/ui'
+import { useApp } from '../../../store'
+import { camposFaltantes, lideresDePadrino } from '../../../data'
+import { Badge, Card, Kpi } from '../../../components/ui'
 
 export default function PadrinoDash() {
   const { db, session } = useApp()

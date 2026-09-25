@@ -1,8 +1,8 @@
 import { Fragment, useState } from 'react'
-import { useApp } from '../store'
-import { nombreLider } from '../data'
-import { Badge, Card } from '../components/ui'
-import type { EstadoPlanilla } from '../types'
+import { useApp } from '../../../store'
+import { nombreLider } from '../../../data'
+import { Badge, Card } from '../../../components/ui'
+import type { EstadoPlanilla } from '../../../types'
 
 const ESTADO_TONE: Record<EstadoPlanilla, string> = {
   entregada: 'bg-slate-200 text-slate-700',

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
-import { useApp } from '../store'
-import { buscarPuesto, DEPARTAMENTO_CAMPANA, MUNICIPIO_CAMPANA } from '../data'
-import { edad, fmtFecha } from '../lib'
-import type { SimpatizanteApi } from '../types'
-import { Badge, Card, nivelAcademicoTone, nivelTone, validezLabel, validezTone, vehiculoTone } from '../components/ui'
+import { useApp } from '../../../store'
+import { buscarPuesto, DEPARTAMENTO_CAMPANA, MUNICIPIO_CAMPANA } from '../../../data'
+import { edad, fmtFecha } from '../../../lib'
+import type { SimpatizanteApi } from '../../../types'
+import { Badge, Card, nivelAcademicoTone, nivelTone, validezLabel, validezTone, vehiculoTone } from '../../../components/ui'
 
 const validezDeApi = (p: SimpatizanteApi) => {
   if (p.departamento === DEPARTAMENTO_CAMPANA && p.municipio === MUNICIPIO_CAMPANA) return 'valido' as const

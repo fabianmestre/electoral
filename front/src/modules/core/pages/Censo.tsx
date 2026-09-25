@@ -1,7 +1,7 @@
 import { Fragment, useState } from 'react'
-import { useApp } from '../store'
-import { MUNICIPIO_CAMPANA, PUESTOS, esValido } from '../data'
-import { Card } from '../components/ui'
+import { useApp } from '../../../store'
+import { MUNICIPIO_CAMPANA, PUESTOS, esValido } from '../../../data'
+import { Card } from '../../../components/ui'
 
 export default function Censo() {
   const { db, irADirectorio } = useApp()

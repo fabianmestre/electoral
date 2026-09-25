@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { BadgeCheck, Cake, CheckCircle2, Clock, Send, Users, Wallet } from 'lucide-react'
-import { useApp } from '../store'
-import { BARRIOS, COMUNAS, CORREGIMIENTOS, DEPARTAMENTO_CAMPANA, MUNICIPIO_CAMPANA, NIVELES_ACADEMICOS, PUESTOS } from '../data'
-import { diasParaCumple, fmtCOP, fmtFechaHora } from '../lib'
-import type { SimpatizanteApi, Validez } from '../types'
-import { Badge, Bars, BarsScroll, Card, Donut, Kpi, Legend, Modal, ProgressBar } from '../components/ui'
-import Cumpleanos from '../components/Cumpleanos'
+import { useApp } from '../../../store'
+import { BARRIOS, COMUNAS, CORREGIMIENTOS, DEPARTAMENTO_CAMPANA, MUNICIPIO_CAMPANA, NIVELES_ACADEMICOS, PUESTOS } from '../../../data'
+import { diasParaCumple, fmtCOP, fmtFechaHora } from '../../../lib'
+import type { SimpatizanteApi, Validez } from '../../../types'
+import { Badge, Bars, BarsScroll, Card, Donut, Kpi, Legend, Modal, ProgressBar } from '../../../components/ui'
+import Cumpleanos from '../../../components/Cumpleanos'
 
 const VAL_COLORS: Record<string, string> = { valido: '#10b981', fuera_municipio: '#f59e0b', fuera_departamento: '#ef4444' }
 const CAT_COLORS: Record<string, string> = {
@@ -34,7 +34,7 @@ const validezDeApi = (p: SimpatizanteApi): Validez => {
   return 'fuera_departamento'
 }
 
-export default function Dashboard() {
+export default function Dashboard({ hideSummary = false }: { hideSummary?: boolean }) {
   const {
     db, simpatizantesApi, lideresApi, gestionesApi, padrinosApi,
     cargarSimpatizantesApi, cargarLideresApi, cargarGestionesApi, cargarPadrinosApi,
@@ -137,14 +137,14 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mb-5">
+      {!hideSummary && <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mb-5">
         <Kpi icon={Users} label="Simpatizantes" value={total} accent="text-blue-600" onClick={() => irADirectorio({})} />
         <Kpi icon={BadgeCheck} label="Válidos (Valledupar)" value={validos} accent="text-emerald-600" onClick={() => irADirectorio({ validez: 'valido' })} />
         <Kpi icon={CheckCircle2} label="Firmes válidos" value={firmesValidos} accent="text-slate-700" onClick={() => irADirectorio({ nivelVoto: 'Firme', validez: 'valido' })} />
         <Kpi icon={Clock} label="Gestiones pendientes" value={gestionesPendientes} accent="text-amber-600" onClick={() => irAGestiones({ estado: 'Pendiente' })} />
         <Kpi icon={Cake} label="Cumpleañeros (7 días)" value={cumples.length} accent="text-pink-600" onClick={() => setShowCumples(true)} />
         <Kpi icon={Wallet} label="Total invertido" value={fmtCOP(invertido)} accent="text-amber-600" onClick={() => irAGestiones({ conMonto: 'con' })} />
-      </div>
+      </div>}
 
       <Card
         title={`📊 ${dims[dim].titulo}`}
@@ -165,6 +165,24 @@ export default function Dashboard() {
       >
         <BarsScroll data={dims[dim].data} />
       </Card>
+
+      <div className="space-y-4 mb-4">
+        <Card title="Análisis Territorial">
+          <p className="text-sm font-semibold text-slate-800">Votos Válidos por Comuna de Votación</p>
+          <p className="text-xs text-slate-400 mb-2">Solo simpatizantes con validez Válido</p>
+          <Bars data={barrasZonas.filter((x) => COMUNAS.includes(x.label)).slice(0, 6)} height={245} />
+        </Card>
+        <Card title="Penetración Geográfica Detallada">
+          <p className="text-sm font-semibold text-slate-800">Top Barrios con mayor volumen de votos válidos</p>
+          <p className="text-xs text-slate-400 mb-2">Solo simpatizantes con validez Válido</p>
+          <Bars data={barrasBarrios.slice(0, 15)} height={245} />
+        </Card>
+        <Card title="Caracterización Social y Discurso">
+          <p className="text-sm font-semibold text-slate-800">Intereses y Temas Predominantes</p>
+          <p className="text-xs text-slate-400 mb-2">Caracterización declarada por los propios simpatizantes</p>
+          <Bars data={Object.entries(data.cat).map(([label, value]) => ({ label, value, color: '#7c3aed' }))} height={245} />
+        </Card>
+      </div>
 
       <div className="grid lg:grid-cols-2 gap-4 mb-4">
         <Card title="Validez del electorado (Concejo de Valledupar)">
