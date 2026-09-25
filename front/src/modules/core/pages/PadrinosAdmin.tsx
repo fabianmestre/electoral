@@ -1,4 +1,5 @@
 import { Copy, Eye, EyeOff, KeyRound, Search } from 'lucide-react'
+import { confirmar } from '../../../components/ConfirmDialog'
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '../../../store'
 
@@ -48,7 +49,7 @@ export default function PadrinosAdmin() {
   const activas = cuentas.filter((c) => c.activo).length
 
   const restablecer = async (c: Cuenta) => {
-    if (!window.confirm(`¿Generar una clave nueva para ${c.nombre}? La clave actual dejará de funcionar.`)) return
+    if (!(await confirmar({ titulo: 'Restablecer clave', mensaje: `Se generará una clave nueva para ${c.nombre}. La clave actual dejará de funcionar.`, confirmar: 'Generar clave', icono: 'clave' }))) return
     setBusy(c.id)
     try {
       const { password } = await api<{ password: string }>(`/${c.id}/clave`, { method: 'POST' })
@@ -60,7 +61,7 @@ export default function PadrinosAdmin() {
   }
 
   const cambiarAcceso = async (c: Cuenta) => {
-    if (c.activo && !window.confirm(`¿Desactivar el acceso de ${c.nombre}? No podrá iniciar sesión hasta que lo reactives.`)) return
+    if (c.activo && !(await confirmar({ titulo: 'Desactivar acceso', mensaje: `${c.nombre} no podrá iniciar sesión hasta que reactives su cuenta. No se borra ningún dato.`, confirmar: 'Desactivar', tono: 'peligro' }))) return
     setBusy(c.id)
     try {
       await api(`/${c.id}`, { method: 'PATCH', body: JSON.stringify({ activo: !c.activo }) })

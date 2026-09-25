@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { confirmar } from '../../../components/ConfirmDialog'
 import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
 import { useApp } from '../../../store'
 import { buscarPuesto, DEPARTAMENTO_CAMPANA, MUNICIPIO_CAMPANA } from '../../../data'
@@ -34,7 +35,7 @@ export default function SimpatizanteDetalle() {
 
   const eliminar = async () => {
     if (!p) return
-    if (!window.confirm(`¿Eliminar la ficha de ${p.nombres} ${p.apellidos}? Esta acción no se puede deshacer.`)) return
+    if (!(await confirmar({ titulo: 'Eliminar ficha', mensaje: `Se eliminará la ficha de ${p.nombres} ${p.apellidos}. Esta acción no se puede deshacer.`, confirmar: 'Eliminar', tono: 'peligro' }))) return
     setBorrando(true)
     await eliminarSimpatizante(p.id)
     setBorrando(false)

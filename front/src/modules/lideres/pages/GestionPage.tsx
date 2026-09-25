@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { confirmar } from '../../../components/ConfirmDialog'
 import { Pencil, Plus, Trash2, Users } from 'lucide-react'
 import { useApp } from '../../../store'
 import type { LiderApi, LiderApiInput } from '../../../types'
@@ -91,7 +92,7 @@ export default function GestionLideres() {
   }
 
   const eliminar = async (l: LiderApi) => {
-    if (!window.confirm(`¿Eliminar al líder ${l.nombres} ${l.apellidos}? Esta acción no se puede deshacer.`)) return
+    if (!(await confirmar({ titulo: 'Eliminar líder', mensaje: `Se eliminará al líder ${l.nombres} ${l.apellidos}. Esta acción no se puede deshacer.`, confirmar: 'Eliminar', tono: 'peligro' }))) return
     setEliminandoId(l.id)
     try {
       await eliminarLiderApi(l.id)

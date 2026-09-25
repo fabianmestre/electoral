@@ -50,6 +50,9 @@ export type ViewId =
   | 'padrino-simpatizantes'
   | 'padrinos'
   | 'padrino-roles'
+  | 'lider-registrar'
+  | 'lider-registros'
+  | 'gestor-asignaciones'
   | 'simpatizante-detalle'
   | 'gestion-lideres'
   | 'lider-directorio'
@@ -241,11 +244,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toastTimer.current = window.setTimeout(() => setToast(null), 3200)
   }
 
-  const applySession = (u: Usuario) => {
+  // alIniciar: login explícito (no restauración). El líder siempre entra a Registrar y solo
+  // conserva «Mis Registros» al recargar; nunca hereda la ruta de otro usuario.
+  const applySession = (u: Usuario, alIniciar = false) => {
     setSession(u)
     setPerfilId(null)
-    const routeView = viewFromPath(window.location.pathname)
-    setView(routeView ?? (u.rol === 'admin' ? 'dashboard' : u.rol === 'padrino' ? 'padrino-dash' : u.rol === 'digitador' || u.rol === 'lider' ? 'digitador' : u.rol === 'gestor' ? 'directorio' : 'comunicaciones'))
+    let routeView = viewFromPath(window.location.pathname)
+    if (u.rol === 'lider' && (alIniciar || routeView !== 'lider-registros')) routeView = null
+    if (u.rol === 'digitador' || u.rol === 'gestor') routeView = null
+    const v = routeView ?? (u.rol === 'admin' ? 'dashboard' : u.rol === 'padrino' ? 'padrino-dash' : u.rol === 'lider' ? 'lider-registrar' : u.rol === 'digitador' ? 'digitador' : u.rol === 'gestor' ? 'gestor-asignaciones' : 'comunicaciones')
+    if (window.location.pathname !== ROUTES[v]) window.history.replaceState({}, '', ROUTES[v])
+    setView(v)
   }
 
   const cargarSimpatizantesApi = async () => {
@@ -654,7 +663,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!response.ok) throw new Error(data.error || 'No se pudo iniciar sesi?n.')
     sessionStorage.setItem('electoral.auth.token', data.accessToken)
     sessionStorage.setItem('electoral.auth.refresh', data.refreshToken)
-    applySession(data.user)
+    applySession(data.user, true)
     notify(`Bienvenido, ${data.user.nombre}`, 'success')
     void cargarSimpatizantesApi()
     void cargarUsuariosApi()
@@ -861,7 +870,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const volver = () => {
     setPerfilId(null)
-    setView(session?.rol === 'admin' ? 'dashboard' : session?.rol === 'padrino' ? 'padrino-dash' : session?.rol === 'digitador' || session?.rol === 'lider' ? 'digitador' : session?.rol === 'gestor' ? 'directorio' : 'comunicaciones')
+    setView(session?.rol === 'admin' ? 'dashboard' : session?.rol === 'padrino' ? 'padrino-dash' : session?.rol === 'lider' ? 'lider-registrar' : session?.rol === 'digitador' ? 'digitador' : session?.rol === 'gestor' ? 'gestor-asignaciones' : 'comunicaciones')
   }
 
   const openPersona = (m: PersonaModalState) => setPersonaModal(m)

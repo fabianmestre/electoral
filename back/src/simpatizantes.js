@@ -37,9 +37,11 @@ const textLimits = {
   profesion: 100, observacion: 1000,
 }
 
+// Fecha de nacimiento, puesto y mesa son opcionales: la ficha puede quedar incompleta y
+// completarse después (las columnas admiten null desde 019/020).
 const requiredOnCreate = [
-  'nombres', 'apellidos', 'cedula', 'fechaNacimiento', 'telefono',
-  'departamento', 'municipio', 'zona', 'barrio', 'puesto', 'mesa', 'liderId', 'habeasData',
+  'nombres', 'apellidos', 'cedula', 'telefono',
+  'departamento', 'municipio', 'zona', 'barrio', 'liderId', 'habeasData',
 ]
 
 const NIVELES_ACADEMICOS = ['Sin estudios', 'Primaria', 'Bachiller', 'Técnico', 'Tecnólogo', 'Profesional']
@@ -79,6 +81,7 @@ export function validateSimpatizante(input, { partial = false } = {}) {
       continue
     }
     if (field === 'mesa') {
+      if (value === null || value === '') { result[column] = null; continue }
       const n = Number(value)
       if (!Number.isInteger(n) || n <= 0) errors[field] = 'Ingresa un número de mesa válido.'
       else result[column] = n
@@ -123,6 +126,7 @@ export function validateSimpatizante(input, { partial = false } = {}) {
       continue
     }
     if (field === 'fechaNacimiento') {
+      if (value === null || value === '') { result[column] = null; continue }
       if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(value)) || value > new Date().toISOString().slice(0, 10)) {
         errors[field] = 'Ingresa una fecha de nacimiento válida.'
       } else result[column] = value
@@ -135,7 +139,7 @@ export function validateSimpatizante(input, { partial = false } = {}) {
     }
 
     // Campos de texto libre (algunos opcionales)
-    const nullable = ['correo', 'direccion', 'comuna', 'corregimiento', 'ocupacion', 'profesion', 'observacion', 'planillaCodigo']
+    const nullable = ['correo', 'direccion', 'comuna', 'corregimiento', 'ocupacion', 'profesion', 'observacion', 'planillaCodigo', 'puesto']
     if (value === null && nullable.includes(field)) {
       result[column] = null
       continue

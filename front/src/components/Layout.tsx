@@ -8,10 +8,11 @@ import {
   GraduationCap,
   Handshake,
   KeyRound,
+  List,
+  Pencil,
   LayoutDashboard,
   Menu,
   // MapPin,
-  RotateCcw,
   Send,
   ShieldCheck,
   Flag,
@@ -30,6 +31,9 @@ import Dashboard from '../modules/core/pages/Dashboard'
 import Lideres from '../modules/lideres/pages/LideresPage'
 import LiderDirectorioPage from '../modules/lideres/pages/LiderDirectorioPage'
 import PadrinoRolesPage from '../modules/padrinos/pages/PadrinoRolesPage'
+import LiderRegistrarPage from '../modules/lideres/pages/LiderRegistrarPage'
+import LiderRegistrosPage from '../modules/lideres/pages/LiderRegistrosPage'
+import GestorAsignacionesPage from '../modules/gestiones/pages/GestorAsignacionesPage'
 import Gestiones from '../modules/gestiones/pages/GestionesPage'
 import Comunicaciones from '../modules/gestiones/pages/ComunicacionesPage'
 import Logistica from '../modules/gestiones/pages/DiaEPage'
@@ -57,7 +61,10 @@ interface NavItem {
 }
 
 const NAV: Record<UserRole, NavItem[]> = {
-  lider: [{ id: 'digitador', label: 'Mis simpatizantes', sub: 'Registro y actualización de mis fichas', icon: Users }],
+  lider: [
+    { id: 'lider-registrar', label: 'Registrar Simpatizante', sub: 'Formulario completo', icon: Pencil },
+    { id: 'lider-registros', label: 'Mis Registros', sub: 'Fichas que registraste', icon: List },
+  ],
   admin: [
     { id: 'digitador', label: 'Digitador', sub: 'Cuentas y captura de planillas', icon: ClipboardList },
     { id: 'gestores', label: 'Gestores', sub: 'Cuentas para completar fichas', icon: UserCog },
@@ -84,9 +91,9 @@ const NAV: Record<UserRole, NavItem[]> = {
     { id: 'padrino-simpatizantes', label: 'Simpatizantes', sub: 'Gestión sobre mis líderes', icon: Users },
   ],
   digitador: [
-    { id: 'digitador', label: 'Digitador', sub: 'Captura de simpatizantes y planillas', icon: ClipboardList },
+    { id: 'digitador', label: 'Registrar Simpatizante', sub: 'Formulario completo', icon: Pencil },
   ],
-  gestor: [{ id: 'directorio', label: 'Simpatizantes', sub: 'Completar y editar fichas', icon: Users }],
+  gestor: [{ id: 'gestor-asignaciones', label: 'Mis Asignaciones', sub: 'Completar y editar fichas', icon: List }],
 }
 
 const TITLES: Record<ViewId, string> = {
@@ -109,6 +116,9 @@ const TITLES: Record<ViewId, string> = {
   'padrino-simpatizantes': 'Simpatizantes de mis líderes',
   padrinos: 'Credenciales',
   'padrino-roles': 'Padrinos',
+  'lider-registrar': 'Registrar Simpatizante',
+  'lider-registros': 'Mis Registros',
+  'gestor-asignaciones': 'Mis Asignaciones',
   'gestion-lideres': 'Líderes',
   'lider-directorio': 'Líderes',
   gestores: 'Gestores',
@@ -160,11 +170,17 @@ function renderView(view: ViewId) {
       return <PadrinosAdmin />
     case 'padrino-roles':
       return <PadrinoRolesPage />
+    case 'lider-registrar':
+      return <LiderRegistrarPage />
+    case 'lider-registros':
+      return <LiderRegistrosPage />
+    case 'gestor-asignaciones':
+      return <GestorAsignacionesPage />
   }
 }
 
 export default function Layout() {
-  const { db, session, view, navigate, logout, resetDatos } = useApp()
+  const { db, session, view, navigate, logout } = useApp()
   const [open, setOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   if (!session) return null
@@ -244,14 +260,6 @@ export default function Layout() {
           })}
         </nav>
         <div className="shrink-0 p-3 border-t border-slate-800 space-y-1">
-          <button
-            onClick={resetDatos}
-            title={collapsed ? 'Restablecer datos de prueba' : undefined}
-            className={`w-full flex items-center gap-2 text-[11px] text-slate-400 hover:text-white px-2 py-1.5 rounded transition ${collapsed ? 'lg:justify-center lg:px-0' : ''}`}
-          >
-            <RotateCcw className="w-3.5 h-3.5 shrink-0" />
-            <span className={collapsed ? 'lg:hidden' : ''}>Restablecer datos de prueba</span>
-          </button>
           <AccountMenu session={session} collapsed={collapsed} onLogout={logout} />
         </div>
       </aside>
@@ -263,20 +271,18 @@ export default function Layout() {
           <button className="lg:hidden text-slate-600" onClick={() => setOpen(true)}>
             <Menu className="w-5 h-5" />
           </button>
-          <button
-            className="hidden lg:inline-flex text-slate-600 hover:text-slate-900"
-            onClick={() => setCollapsed(!collapsed)}
-            title={collapsed ? 'Mostrar menú' : 'Ocultar menú'}
-          >
-            {collapsed ? <ChevronsRight className="w-5 h-5" /> : <ChevronsLeft className="w-5 h-5" />}
-          </button>
-          <div className="flex-1 min-w-0">
-            <h2 className="font-bold text-slate-900 truncate">{session.rol === 'lider' && view === 'digitador' ? 'Mis simpatizantes' : TITLES[view]}</h2>
-            <p className="text-[11px] text-slate-500 truncate">
-              {(items.find((i) => i.id === view) || {}).sub ?? ''}
-            </p>
-          </div>
-          <Badge className={`${zoneTone} max-w-[220px] truncate`}>{topBadge}</Badge>
+          {session.rol === 'lider' || session.rol === 'digitador' || session.rol === 'gestor' ? <>
+            <p className="flex-1 min-w-0 truncate text-sm text-slate-500">Sesión activa: <span className="font-semibold text-slate-900">{session.nombre}</span></p>
+            {session.rol !== 'digitador' && <button type="button" onClick={logout} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"><Users className="h-4 w-4" /> Cambiar usuario</button>}
+          </> : <>
+            <div className="flex-1 min-w-0">
+              <h2 className="font-bold text-slate-900 truncate">{TITLES[view]}</h2>
+              <p className="text-[11px] text-slate-500 truncate">
+                {(items.find((i) => i.id === view) || {}).sub ?? ''}
+              </p>
+            </div>
+            <Badge className={`${zoneTone} max-w-[220px] truncate`}>{topBadge}</Badge>
+          </>}
         </header>
 
         <main className="flex-1 p-4 md:p-6 max-w-[1400px] w-full mx-auto">

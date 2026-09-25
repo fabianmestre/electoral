@@ -1,4 +1,5 @@
 import { Filter, Search, X } from 'lucide-react'
+import { confirmar } from '../../../components/ConfirmDialog'
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '../../../store'
 import { fmtCOP } from '../../../lib'
@@ -75,7 +76,7 @@ export default function Gestiones() {
   const puedeGestionar = session?.rol === 'admin' || session?.rol === 'padrino'
 
   const eliminar = async (g: GestionApi) => {
-    if (!window.confirm(`¿Eliminar la gestión "${g.descripcion}"? Esta acción no se puede deshacer.`)) return
+    if (!(await confirmar({ titulo: 'Eliminar gestión', mensaje: `Se eliminará «${g.descripcion}». Esta acción no se puede deshacer.`, confirmar: 'Eliminar', tono: 'peligro' }))) return
     setEliminandoId(g.id)
     try { await eliminarGestionApi(g.id) } finally { setEliminandoId(null) }
   }

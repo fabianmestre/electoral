@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { confirmar } from '../../../components/ConfirmDialog'
 import { ChevronLeft, ChevronRight, Filter, Plus, Search, X } from 'lucide-react'
 import { useApp } from '../../../store'
 import {
@@ -108,7 +109,8 @@ function paginas(current: number, total: number): (number | '...')[] {
 
 // rolMode: vista de un rol (Líderes, Gestores…). Sin búsqueda muestra solo ese rol; al buscar
 // muestra a cualquier simpatizante para poder promoverlo.
-export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 'lider' : undefined }: { leaderMode?: boolean; rolMode?: RolSimpatizante }) {
+// soloPropios: «Mis Registros» del líder — solo las fichas que la sesión registró, en lectura.
+export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 'lider' : undefined, soloPropios = false }: { leaderMode?: boolean; rolMode?: RolSimpatizante; soloPropios?: boolean }) {
   const {
     cambiarRolSimpatizante, padrinosApi, cargarPadrinosApi, cargarLideresApi, notify,
     session, openPersona, liderFilter, setLiderFilter, directorioPreset, clearDirectorioPreset,
@@ -137,7 +139,7 @@ export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 
   }
   const cambiarRol = async (p: SimpatizanteApi, rol: RolSimpatizante) => {
     const accion = rol === 'simpatizante' ? `quitarle el rol ${ROL_SIMPATIZANTE_LABEL[p.rol]} a` : `promover a ${ROL_SIMPATIZANTE_LABEL[rol]} a`
-    if (!window.confirm(`¿Seguro que quieres ${accion} ${p.nombres} ${p.apellidos}?`)) return
+    if (!(await confirmar({ titulo: rol === 'simpatizante' ? 'Quitar rol' : `Promover a ${ROL_SIMPATIZANTE_LABEL[rol]}`, mensaje: `¿Seguro que quieres ${accion} ${p.nombres} ${p.apellidos}?`, confirmar: rol === 'simpatizante' ? 'Quitar rol' : 'Promover', tono: rol === 'simpatizante' ? 'peligro' : 'normal' }))) return
     setCambiandoId(p.id)
     try {
       if (await cambiarRolSimpatizante(p.id, rol)) {
@@ -161,7 +163,7 @@ export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 
   }, [])
 
   const borrarTodos = async () => {
-    if (!window.confirm('¿Borrar TODOS los simpatizantes guardados en el backend (Supabase)? Esta acción no se puede deshacer.')) return
+    if (!(await confirmar({ titulo: 'Borrar todos los simpatizantes', mensaje: 'Se borrarán TODOS los simpatizantes guardados en la base de datos. Esta acción no se puede deshacer.', confirmar: 'Borrar todo', tono: 'peligro' }))) return
     setBorrando(true)
     try {
       await borrarTodosSimpatizantes()
@@ -247,6 +249,7 @@ export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 
     if (f.nivelAcademico !== 'all') l = l.filter((p) => p.nivelAcademico === f.nivelAcademico)
     if (f.posgrado !== 'all') l = l.filter((p) => p.posgrado === f.posgrado)
     if (rolMode && !f.q.trim()) l = l.filter((p) => (p.rol ?? 'simpatizante') === rolMode)
+    if (soloPropios) l = l.filter((p) => p.creadoPor === session?.id)
     if (f.q.trim()) {
       const q = f.q.trim().toLowerCase()
       l = l.filter((p) =>
@@ -256,7 +259,7 @@ export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 
       )
     }
     return l.sort((a, b) => a.nombres.localeCompare(b.nombres))
-  }, [simpatizantesApi, filtros, rolMode])
+  }, [simpatizantesApi, filtros, rolMode, soloPropios, session?.id])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
   const current = Math.min(page, totalPages)
@@ -570,7 +573,7 @@ export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 
               {paginado.length === 0 && (
                 <tr>
                   <td colSpan={rolMode ? 17 : 16} className="px-4 py-10 text-center text-xs text-slate-400">
-                    {cargandoSimpatizantes ? 'Cargando simpatizantes…' : rolMode && !filtros.q.trim() ? `Aún no hay nadie con rol ${ROL_SIMPATIZANTE_LABEL[rolMode]}. Busca un simpatizante por nombre o cédula para promoverlo.` : 'Sin resultados para los filtros aplicados.'}
+                    {cargandoSimpatizantes ? 'Cargando simpatizantes…' : rolMode && !filtros.q.trim() ? `Aún no hay nadie con rol ${ROL_SIMPATIZANTE_LABEL[rolMode]}. Busca un simpatizante por nombre o cédula para promoverlo.` : soloPropios ? 'No hay simpatizantes que coincidan con los filtros.' : 'Sin resultados para los filtros aplicados.'}
                   </td>
                 </tr>
               )}
@@ -583,7 +586,7 @@ export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 
                 return (
                   <tr key={p.id} className={`${bg} hover:bg-gray-100/60`}>
                     <td className={`sticky left-0 z-10 px-4 py-3 whitespace-nowrap ${bg}`}>
-                      <button type="button" onClick={() => openPersona({ mode: 'edit', personaId: p.id })} className="text-left font-medium text-blue-700 hover:underline">
+                      <button type="button" disabled={soloPropios} onClick={() => openPersona({ mode: 'edit', personaId: p.id })} className="text-left font-medium text-blue-700 hover:underline disabled:cursor-default disabled:text-gray-700 disabled:no-underline">
                         {p.nombres} {p.apellidos}
                       </button>
                     </td>

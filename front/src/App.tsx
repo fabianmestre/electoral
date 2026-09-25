@@ -1,4 +1,5 @@
 import { useApp } from './store'
+import { ConfirmHost } from './components/ConfirmDialog'
 import Login from './components/Login'
 import Layout from './components/Layout'
 import PersonaForm from './components/PersonaForm'
@@ -25,6 +26,7 @@ export default function App() {
       <PersonaForm />
       <GestionForm />
       <ToastView />
+      <ConfirmHost />
     </>
   )
 }
