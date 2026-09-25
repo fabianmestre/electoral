@@ -176,6 +176,38 @@ export async function cambiarAccesoAdmin(id, activo) {
   return { id, activo }
 }
 
+// --- Asignación gestor ↔ líderes (027) ---
+export async function listarAsignacionesGestoresAdmin() {
+  const gestores = await adminRequest('/rest/v1/users?rol=eq.gestor&select=id,nombre,cedula,activo&order=nombre.asc')
+  const filas = await adminRequest('/rest/v1/gestor_lideres?select=gestor_id,lider_id')
+  return gestores.map((g) => ({
+    gestorId: g.id, nombre: g.nombre, cedula: g.cedula, activo: g.activo,
+    liderIds: filas.filter((f) => f.gestor_id === g.id).map((f) => f.lider_id),
+  }))
+}
+
+// Reemplaza el conjunto de líderes asignados a un gestor.
+export async function asignarLideresGestorAdmin(gestorId, liderIds, adminId) {
+  if (!Array.isArray(liderIds) || !liderIds.every((x) => typeof x === 'string' && /^[0-9a-f-]{36}$/i.test(x))) {
+    throw new ApiError(422, 'Envía la lista de líderes a asignar.')
+  }
+  const [gestor] = await adminRequest(`/rest/v1/users?id=eq.${encodeURIComponent(gestorId)}&rol=eq.gestor&select=id`)
+  if (!gestor) throw new ApiError(404, 'Gestor no encontrado.')
+  const unicos = [...new Set(liderIds)]
+  if (unicos.length) {
+    const existentes = await adminRequest(`/rest/v1/lideres?id=in.(${unicos.join(',')})&select=id`)
+    if (existentes.length !== unicos.length) throw new ApiError(422, 'Alguno de los líderes no existe.')
+  }
+  await adminRequest(`/rest/v1/gestor_lideres?gestor_id=eq.${gestor.id}`, { method: 'DELETE' })
+  if (unicos.length) {
+    await adminRequest('/rest/v1/gestor_lideres', {
+      method: 'POST', headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify(unicos.map((lider_id) => ({ gestor_id: gestor.id, lider_id, asignado_por: adminId }))),
+    })
+  }
+  return { gestorId: gestor.id, liderIds: unicos }
+}
+
 export const ROLES_SIMPATIZANTE = ['simpatizante', 'lider', 'padrino', 'gestor', 'digitador']
 
 // El rol Líder necesita su registro en public.lideres (meta, padrino y equipo vía lider_id).

@@ -17,6 +17,7 @@ import { actualizarGestorAdmin, crearGestorAdmin, listarGestoresAdmin } from './
 import { cambiarRolSimpatizanteAdmin } from './admin.js'
 import { cambiarAccesoAdmin, listarCredencialesAdmin, restablecerClaveAdmin } from './admin.js'
 import { enviarComunicacion, listarComunicaciones } from './comunicaciones.js'
+import { asignarLideresGestorAdmin, listarAsignacionesGestoresAdmin } from './admin.js'
 import { validarCapturaPlanilla } from './digitacion-planillas.js'
 
 const port = Number(process.env.PORT || 3002)
@@ -622,6 +623,16 @@ const server = createServer(async (request, response) => {
       return send(status, data)
     }
 
+    if (pathname === '/api/gestores/asignaciones' && request.method === 'GET') {
+      await requireAdmin(request)
+      return send(200, { items: await listarAsignacionesGestoresAdmin() })
+    }
+    const gestorLideresMatch = pathname.match(new RegExp(`^/api/gestores/(${UUID_RE})/lideres$`))
+    if (gestorLideresMatch && request.method === 'PUT') {
+      const { user } = await requireAdmin(request)
+      const { liderIds } = await body(request)
+      return send(200, await asignarLideresGestorAdmin(gestorLideresMatch[1], liderIds, user.id))
+    }
     if (pathname === '/api/comunicaciones' && request.method === 'GET') {
       await requireAdmin(request)
       return send(200, { items: await listarComunicaciones() })

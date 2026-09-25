@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { confirmar } from '../../../components/ConfirmDialog'
 import { ChevronLeft, ChevronRight, Filter, Plus, Search, X } from 'lucide-react'
 import { useApp } from '../../../store'
@@ -110,7 +110,8 @@ function paginas(current: number, total: number): (number | '...')[] {
 // rolMode: vista de un rol (Líderes, Gestores…). Sin búsqueda muestra solo ese rol; al buscar
 // muestra a cualquier simpatizante para poder promoverlo.
 // soloPropios: «Mis Registros» del líder — solo las fichas que la sesión registró, en lectura.
-export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 'lider' : undefined, soloPropios = false }: { leaderMode?: boolean; rolMode?: RolSimpatizante; soloPropios?: boolean }) {
+// accionExtra: acción adicional por fila en las vistas de rol (p. ej. asignar líderes a un gestor).
+export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 'lider' : undefined, soloPropios = false, accionExtra }: { leaderMode?: boolean; rolMode?: RolSimpatizante; soloPropios?: boolean; accionExtra?: (p: SimpatizanteApi) => ReactNode }) {
   const {
     cambiarRolSimpatizante, padrinosApi, cargarPadrinosApi, cargarLideresApi, notify,
     session, openPersona, liderFilter, setLiderFilter, directorioPreset, clearDirectorioPreset,
@@ -337,7 +338,7 @@ export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 
           Columnas (16)
         </button>
         {!rolMode && session?.rol !== 'gestor' && <button onClick={() => openPersona({ mode: 'new' })} className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
-          <Plus className="w-4 h-4" /> + Nuevo Simpatizante
+          <Plus className="w-4 h-4" /> Nuevo Simpatizante
         </button>}
       </div>
 
@@ -614,7 +615,8 @@ export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 
                       <input type="checkbox" checked={p.votoRegistrado} readOnly disabled className="h-4 w-4 rounded border-gray-300 text-blue-600 disabled:opacity-40" />
                     </td>
                     {rolMode && (
-                      <td className="px-4 py-3 text-right">
+                      <td className="whitespace-nowrap px-4 py-3 text-right">
+                        {accionExtra?.(p)}
                         {session?.rol === 'admin' && (p.rol === rolMode
                           ? <button type="button" disabled={cambiandoId === p.id} onClick={() => void cambiarRol(p, 'simpatizante')} title={aCargo(p)} className="whitespace-nowrap text-xs font-medium text-red-600 hover:underline disabled:opacity-50">Quitar rol</button>
                           : <button type="button" disabled={cambiandoId === p.id} onClick={() => void cambiarRol(p, rolMode)} className="whitespace-nowrap text-xs font-medium text-blue-600 hover:underline disabled:opacity-50">Promover a {ROL_SIMPATIZANTE_LABEL[rolMode]}</button>)}

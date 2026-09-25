@@ -66,6 +66,7 @@ export default function GestorAsignacionesPage() {
         <h1 className="text-xl font-semibold text-gray-900">Mis Asignaciones</h1>
         <p className="mb-1 text-sm text-gray-500">Simpatizantes de los líderes que tienes asignados. Puedes mejorar su caracterización (perfil, ocupación, intereses, grupos sociales, puesto/mesa de votación) para apoyar la toma de decisiones de la campaña — no puedes editar datos básicos de identidad ni eliminar registros.</p>
         <p className="mb-4 text-sm text-gray-500">Día E: activa la columna <span className="font-medium text-gray-700">"¿Ya votó?"</span> (grupo Día E) desde "Columnas" para ir marcando quién ya votó (solo se habilita el 15/09/2026). Llevas <span className="font-semibold text-gray-900">{votaron}</span> de <span className="font-semibold text-gray-900">{validos.length}</span> simpatizantes válidos con voto confirmado.</p>
+        {!cargandoSimpatizantes && lideresApi.length === 0 && <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Aún no tienes líderes asignados. Pide al administrador que te asigne líderes para ver y completar sus fichas.</p>}
         <div className="mb-5 flex gap-2">
           <button type="button" onClick={() => setTab('dashboard')} className={tabCls(tab === 'dashboard')}><IconoDashboard />Dashboard</button>
           <button type="button" onClick={() => setTab('directorio')} className={tabCls(tab === 'directorio')}><IconoDirectorio />Directorio</button>
