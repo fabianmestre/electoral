@@ -11,6 +11,7 @@ import {
   List,
   Pencil,
   LayoutDashboard,
+  MapPin,
   Menu,
   // MapPin,
   Send,
@@ -34,6 +35,7 @@ import PadrinoRolesPage from '../modules/padrinos/pages/PadrinoRolesPage'
 import LiderRegistrarPage from '../modules/lideres/pages/LiderRegistrarPage'
 import LiderRegistrosPage from '../modules/lideres/pages/LiderRegistrosPage'
 import GestorAsignacionesPage from '../modules/gestiones/pages/GestorAsignacionesPage'
+import PuestosPage from '../modules/core/pages/PuestosPage'
 import Gestiones from '../modules/gestiones/pages/GestionesPage'
 import Comunicaciones from '../modules/gestiones/pages/ComunicacionesPage'
 import Logistica from '../modules/gestiones/pages/DiaEPage'
@@ -119,6 +121,7 @@ const TITLES: Record<ViewId, string> = {
   'lider-registrar': 'Registrar Simpatizante',
   'lider-registros': 'Mis Registros',
   'gestor-asignaciones': 'Mis Asignaciones',
+  puestos: 'Puestos de Votación',
   'gestion-lideres': 'Líderes',
   'lider-directorio': 'Líderes',
   gestores: 'Gestores',
@@ -176,6 +179,8 @@ function renderView(view: ViewId) {
       return <LiderRegistrosPage />
     case 'gestor-asignaciones':
       return <GestorAsignacionesPage />
+    case 'puestos':
+      return <PuestosPage />
   }
 }
 
@@ -233,7 +238,7 @@ export default function Layout() {
             </div>
             <div className="my-3 border-t border-slate-800" />
             {([
-              ['gestiones', 'Gestiones', Handshake], ['comunicaciones', 'Comunicaciones', Send], ['logistica', 'Día-E', Flag], ['padrinos', 'Credenciales', KeyRound],
+              ['gestiones', 'Gestiones', Handshake], ['comunicaciones', 'Comunicaciones', Send], ['logistica', 'Día-E', Flag], ['puestos', 'Puestos de votación', MapPin], ['padrinos', 'Credenciales', KeyRound],
             ] as [ViewId, string, LucideIcon][]).map(([id, label, Icon]) => <button key={`${id}-${label}`} onClick={() => { navigate(id); setOpen(false) }} className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors w-full ${view === id ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}><Icon className="h-5 w-5 shrink-0" />{label}</button>)}
           </> : items.map((it) => {
             const Icon = it.icon

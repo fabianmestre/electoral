@@ -223,10 +223,12 @@ export interface FiltrosEnvio {
   cumpleanos: boolean
 }
 
+export type EstadoCampana = 'Activo' | 'Inactivo' | 'Retirado' | 'Fallecido'
+
 export type PersonaInput = Omit<
   Persona,
   'id' | 'esLider' | 'esPadrino' | 'userId' | 'metaVotos' | 'habeasDataFecha' | 'creadoEn' | 'creadoPor' | 'votoRegistrado' | 'votoHora'
->
+> & { estado?: EstadoCampana; departamentoVotacion?: string | null; municipioVotacion?: string | null }
 
 export type GestionInput = Omit<Gestion, 'id' | 'creadoEn' | 'creadoPor'>
 
@@ -279,6 +281,7 @@ export interface SimpatizanteApi {
   nivelVoto: NivelVoto
   rolDiaE: RolDiaE
   rol: RolSimpatizante
+  estado?: EstadoCampana
   habeasData: boolean
   habeasDataFecha: string | null
   votoRegistrado: boolean

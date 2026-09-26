@@ -22,6 +22,7 @@ export const ROUTES: Record<ViewId, string> = {
   'lider-registrar': '/lider/registrar',
   'lider-registros': '/lider/mis-registros',
   'gestor-asignaciones': '/gestor/mis-asignaciones',
+  puestos: '/puestos-votacion',
   'simpatizante-detalle': '/roles/simpatizante/detalle',
   'gestion-lideres': '/roles/lider/gestion',
   'lider-directorio': '/roles/lider/directorio',

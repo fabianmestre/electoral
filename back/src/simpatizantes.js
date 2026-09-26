@@ -28,11 +28,15 @@ const columns = {
   nivelVoto: 'nivel_voto',
   rolDiaE: 'rol_dia_e',
   habeasData: 'habeas_data',
+  estado: 'estado',
+  departamentoVotacion: 'departamento_votacion',
+  municipioVotacion: 'municipio_votacion',
 }
 
 const textLimits = {
   planillaCodigo: 80,
   nombres: 100, apellidos: 100, direccion: 300, departamento: 100, municipio: 100,
+  departamentoVotacion: 100, municipioVotacion: 100,
   comuna: 100, corregimiento: 100, barrio: 150, puesto: 150, ocupacion: 100,
   profesion: 100, observacion: 1000,
 }
@@ -47,6 +51,7 @@ const requiredOnCreate = [
 const NIVELES_ACADEMICOS = ['Sin estudios', 'Primaria', 'Bachiller', 'Técnico', 'Tecnólogo', 'Profesional']
 const POSGRADOS = ['Ninguno', 'Especialización', 'Maestría', 'Doctorado']
 const NIVELES_VOTO = ['Firme', 'Indeciso', 'En Riesgo']
+export const ESTADOS_CAMPANA = ['Activo', 'Inactivo', 'Retirado', 'Fallecido']
 const ROLES_DIA_E = ['Votante', 'Conductor', 'Testigo electoral']
 const TIPOS_VEHICULO = ['Moto', 'Automóvil', 'Camioneta', 'Bus']
 const ESTADOS_VEHICULO = ['Disponible', 'En ruta', 'Completado']
@@ -108,6 +113,11 @@ export function validateSimpatizante(input, { partial = false } = {}) {
       else result[column] = value
       continue
     }
+    if (field === 'estado') {
+      if (!ESTADOS_CAMPANA.includes(value)) errors[field] = 'Estado en la campaña inválido.'
+      else result[column] = value
+      continue
+    }
     if (field === 'nivelVoto') {
       if (!NIVELES_VOTO.includes(value)) errors[field] = 'Nivel de voto inválido.'
       else result[column] = value
@@ -139,7 +149,7 @@ export function validateSimpatizante(input, { partial = false } = {}) {
     }
 
     // Campos de texto libre (algunos opcionales)
-    const nullable = ['correo', 'direccion', 'comuna', 'corregimiento', 'ocupacion', 'profesion', 'observacion', 'planillaCodigo', 'puesto']
+    const nullable = ['correo', 'direccion', 'comuna', 'corregimiento', 'ocupacion', 'profesion', 'observacion', 'planillaCodigo', 'puesto', 'departamentoVotacion', 'municipioVotacion']
     if (value === null && nullable.includes(field)) {
       result[column] = null
       continue
@@ -248,6 +258,7 @@ export function serializeSimpatizante(row) {
     nivelVoto: row.nivel_voto,
     rolDiaE: row.rol_dia_e,
     rol: row.rol ?? 'simpatizante',
+    estado: row.estado ?? 'Activo',
     habeasData: row.habeas_data,
     habeasDataFecha: row.habeas_data_fecha,
     votoRegistrado: row.voto_registrado,

@@ -3,25 +3,15 @@ import { confirmar } from '../../../components/ConfirmDialog'
 import { ChevronLeft, ChevronRight, Filter, Plus, Search, X } from 'lucide-react'
 import { useApp } from '../../../store'
 import {
-  BARRIOS,
-  COMUNAS,
-  CORREGIMIENTOS,
   DEPARTAMENTO_CAMPANA,
-  DEPARTAMENTOS,
   GRUPOS_SOCIALES,
   INTERESES,
   MUNICIPIO_CAMPANA,
-  MUNICIPIOS,
   NIVELES_ACADEMICOS,
-  POSGRADOS,
   PROFESIONES,
   PUESTOS,
-  barriosDeFiltro,
-  comunasDeMunicipio,
-  corregimientosDeMunicipio,
-  municipiosDeDepartamento,
-  puestosDeBarrio,
 } from '../../../data'
+import { useCatalogos } from '../../../catalogos'
 import { ROL_SIMPATIZANTE_LABEL } from '../../../types'
 import type { RolSimpatizante, SimpatizanteApi, Validez } from '../../../types'
 
@@ -68,6 +58,12 @@ interface Filtros {
   profesion: string
   nivelAcademico: string
   posgrado: string
+  dptoVotacion: string
+  municVotacion: string
+  padrinoId: string
+  rol: string
+  estado: string
+  gestiones: string
 }
 
 const DEFAULT_F: Filtros = {
@@ -91,9 +87,21 @@ const DEFAULT_F: Filtros = {
   profesion: 'all',
   nivelAcademico: 'all',
   posgrado: 'all',
+  dptoVotacion: 'all',
+  municVotacion: 'all',
+  padrinoId: 'all',
+  rol: 'all',
+  estado: 'all',
+  gestiones: 'all',
 }
 
-const selCls = 'w-full mt-1 border border-slate-200 rounded-lg px-2.5 py-2 text-sm bg-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
+// Los puestos cargados pueden venir como 'pv-06'; el catálogo usa 'PV06'.
+const normPuesto = (v: string | null | undefined) => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+// Tipos de vehículo agrupados como en el filtro (la planilla usa Carro/Moto; la ficha, Moto/Automóvil/Camioneta/Bus).
+const TIPO_VEHICULO: Record<string, string> = { Moto: 'Moto', Automóvil: 'Carro', Camioneta: 'Carro', Carro: 'Carro', Bus: 'Bus/Buseta' }
+const uniq = (xs: (string | null | undefined)[]) => [...new Set(xs.filter((x): x is string => !!x))].sort((a, b) => a.localeCompare(b, 'es', { numeric: true }))
+
+const selCls = 'w-full rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-blue-500'
 
 function paginas(current: number, total: number): (number | '...')[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
@@ -113,7 +121,7 @@ function paginas(current: number, total: number): (number | '...')[] {
 // accionExtra: acción adicional por fila en las vistas de rol (p. ej. asignar líderes a un gestor).
 export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 'lider' : undefined, soloPropios = false, accionExtra }: { leaderMode?: boolean; rolMode?: RolSimpatizante; soloPropios?: boolean; accionExtra?: (p: SimpatizanteApi) => ReactNode }) {
   const {
-    cambiarRolSimpatizante, padrinosApi, cargarPadrinosApi, cargarLideresApi, notify,
+    cambiarRolSimpatizante, padrinosApi, cargarPadrinosApi, cargarLideresApi, notify, gestionesApi, cargarGestionesApi, usuariosApi,
     session, openPersona, liderFilter, setLiderFilter, directorioPreset, clearDirectorioPreset,
     borrarTodosSimpatizantes, simpatizantesApi, lideresApi, cargandoSimpatizantes, cargarSimpatizantesApi,
   } = useApp()
@@ -223,6 +231,16 @@ export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [directorioPreset])
 
+  const cat = useCatalogos()
+  const puestoCat = (p: SimpatizanteApi) => cat.puestos.find((x) => x.codigo === normPuesto(p.puesto))
+  const dptoVotacionDe = (p: SimpatizanteApi) => p.departamentoVotacion ?? puestoCat(p)?.departamento ?? null
+  const municVotacionDe = (p: SimpatizanteApi) => p.municipioVotacion ?? puestoCat(p)?.municipio ?? null
+  // Padrino: el de la trazabilidad o, si no hay, el del líder asignado.
+  const padrinoDe = (p: SimpatizanteApi) => p.trazabilidad?.padrino?.id ?? lideresApi.find((l) => l.id === p.liderId)?.padrinoId ?? null
+  const conGestiones = useMemo(() => new Set(gestionesApi.map((g) => g.simpatizanteId).filter(Boolean)), [gestionesApi])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (session?.rol === 'admin' || session?.rol === 'padrino') void cargarGestionesApi() }, [])
+
   const filtered = useMemo(() => {
     let l = simpatizantesApi.slice()
     const f = filtros
@@ -233,20 +251,25 @@ export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 
     if (f.comuna !== 'all') l = l.filter((p) => p.comuna === f.comuna)
     if (f.corregimiento !== 'all') l = l.filter((p) => p.corregimiento === f.corregimiento)
     if (f.barrio !== 'all') l = l.filter((p) => p.barrio === f.barrio)
-    if (f.puesto !== 'all') l = l.filter((p) => p.puesto === f.puesto)
+    if (f.puesto !== 'all') l = l.filter((p) => normPuesto(p.puesto) === normPuesto(f.puesto))
+    if (f.dptoVotacion !== 'all') l = l.filter((p) => dptoVotacionDe(p) === f.dptoVotacion)
+    if (f.municVotacion !== 'all') l = l.filter((p) => municVotacionDe(p) === f.municVotacion)
+    if (f.padrinoId !== 'all') l = l.filter((p) => padrinoDe(p) === f.padrinoId)
+    if (f.rol !== 'all') l = l.filter((p) => (p.rol ?? 'simpatizante') === f.rol)
+    if (f.estado !== 'all') l = l.filter((p) => (p.estado ?? 'Activo') === f.estado)
+    if (f.gestiones !== 'all') l = l.filter((p) => conGestiones.has(p.id) === (f.gestiones === 'si'))
     if (f.mesa !== 'all' && f.mesa !== '') l = l.filter((p) => p.mesa === Number(f.mesa))
     if (f.nivelVoto !== 'all') l = l.filter((p) => p.nivelVoto === f.nivelVoto)
     if (f.validez === 'valido') l = l.filter((p) => esValidoApi(p))
     if (f.validez === 'invalido') l = l.filter((p) => !esValidoApi(p))
     if (f.validez === 'fuera_municipio') l = l.filter((p) => validezDeApi(p) === 'fuera_municipio')
     if (f.validez === 'fuera_departamento') l = l.filter((p) => validezDeApi(p) === 'fuera_departamento')
-    if (f.tieneVehiculo === 'si') l = l.filter((p) => p.vehiculos.length > 0)
-    if (f.tieneVehiculo === 'no') l = l.filter((p) => p.vehiculos.length === 0)
-    if (f.tipoVehiculo !== 'all') l = l.filter((p) => p.vehiculos.some((v) => v.tipo === f.tipoVehiculo))
+    if (f.tieneVehiculo !== 'all') l = l.filter((p) => (p.vehiculos.length > 0 || !!p.tieneVehiculo) === (f.tieneVehiculo === 'si'))
+    if (f.tipoVehiculo !== 'all') l = l.filter((p) => [...p.vehiculos.map((v) => v.tipo), p.tipoVehiculoPlanilla].some((t) => t && TIPO_VEHICULO[t] === f.tipoVehiculo))
     if (f.rolDiaE !== 'all') l = l.filter((p) => p.rolDiaE === f.rolDiaE)
     if (f.interes !== 'all') l = l.filter((p) => p.intereses.includes(f.interes))
     if (f.grupoSocial !== 'all') l = l.filter((p) => p.gruposSociales.includes(f.grupoSocial))
-    if (f.profesion !== 'all') l = l.filter((p) => p.profesion === f.profesion)
+    if (f.profesion !== 'all') l = l.filter((p) => (f.profesion === 'Sin profesión' ? !p.profesion || p.profesion === 'Sin estudios' : p.profesion === f.profesion))
     if (f.nivelAcademico !== 'all') l = l.filter((p) => p.nivelAcademico === f.nivelAcademico)
     if (f.posgrado !== 'all') l = l.filter((p) => p.posgrado === f.posgrado)
     if (rolMode && !f.q.trim()) l = l.filter((p) => (p.rol ?? 'simpatizante') === rolMode)
@@ -260,7 +283,7 @@ export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 
       )
     }
     return l.sort((a, b) => a.nombres.localeCompare(b.nombres))
-  }, [simpatizantesApi, filtros, rolMode, soloPropios, session?.id])
+  }, [simpatizantesApi, filtros, rolMode, soloPropios, session?.id, conGestiones, cat.puestos, lideresApi])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE))
   const current = Math.min(page, totalPages)
@@ -269,16 +292,23 @@ export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 
   const activos =
     Object.entries(filtros).filter(([k, v]) => k !== 'q' && v !== 'all' && v !== '').length + (filtros.q.trim() ? 1 : 0)
 
-  const muns = filtros.departamento === 'all' ? MUNICIPIOS : municipiosDeDepartamento(filtros.departamento)
-  const comunas = filtros.municipio === 'all' ? COMUNAS : comunasDeMunicipio(filtros.municipio)
-  const corregimientos = filtros.municipio === 'all' ? CORREGIMIENTOS : corregimientosDeMunicipio(filtros.municipio)
-  const barrios = filtros.municipio === 'all' ? BARRIOS : barriosDeFiltro(filtros.municipio, filtros.comuna, filtros.corregimiento)
-  const puestos =
-    filtros.municipio === 'all'
-      ? PUESTOS
-      : filtros.barrio !== 'all'
-        ? puestosDeBarrio(filtros.municipio, filtros.barrio)
-        : PUESTOS.filter((p) => p.municipio === filtros.municipio)
+  const base = simpatizantesApi
+  const enMunicipio = base.filter((p) => (filtros.departamento === 'all' || p.departamento === filtros.departamento) && (filtros.municipio === 'all' || p.municipio === filtros.municipio))
+  const opt = {
+    departamentos: uniq(base.map((p) => p.departamento)),
+    municipios: uniq(base.filter((p) => filtros.departamento === 'all' || p.departamento === filtros.departamento).map((p) => p.municipio)),
+    comunas: uniq(enMunicipio.filter((p) => filtros.zona !== 'Rural').map((p) => p.comuna)),
+    corregimientos: uniq(enMunicipio.filter((p) => filtros.zona !== 'Urbana').map((p) => p.corregimiento)),
+    barrios: uniq(enMunicipio.filter((p) => (filtros.comuna === 'all' || p.comuna === filtros.comuna) && (filtros.corregimiento === 'all' || p.corregimiento === filtros.corregimiento)).map((p) => p.barrio)),
+    dptosVotacion: uniq([...base.map(dptoVotacionDe), ...cat.puestos.map((x) => x.departamento)]),
+    municsVotacion: uniq([...base.filter((p) => filtros.dptoVotacion === 'all' || dptoVotacionDe(p) === filtros.dptoVotacion).map(municVotacionDe), ...cat.puestos.filter((x) => filtros.dptoVotacion === 'all' || x.departamento === filtros.dptoVotacion).map((x) => x.municipio)]),
+    puestos: cat.puestos.filter((x) => (filtros.dptoVotacion === 'all' || x.departamento === filtros.dptoVotacion) && (filtros.municVotacion === 'all' || x.municipio === filtros.municVotacion)),
+    padrinos: [...new globalThis.Map([
+      ...usuariosApi.filter((u) => u.rol === 'padrino').map((u) => [u.id, u.nombre] as [string, string]),
+      ...base.filter((p) => p.trazabilidad?.padrino?.id).map((p) => [p.trazabilidad!.padrino.id, p.trazabilidad!.padrino.nombre] as [string, string]),
+    ])].sort((a, b) => a[1].localeCompare(b[1])),
+    lideres: lideresApi.filter((l) => filtros.padrinoId === 'all' || l.padrinoId === filtros.padrinoId).sort((a, b) => a.nombres.localeCompare(b.nombres)),
+  }
 
   const activeChips = useMemo(() => {
     const LABELS: Record<string, string> = {
@@ -286,7 +316,8 @@ export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 
       comuna: 'Comuna', corregimiento: 'Corregimiento', barrio: 'Barrio', puesto: 'Puesto', mesa: 'Mesa',
       nivelVoto: 'Nivel de voto', validez: 'Validez', tieneVehiculo: 'Vehículo', tipoVehiculo: 'Tipo vehículo',
       rolDiaE: 'Rol Día E', interes: 'Interés', grupoSocial: 'Grupo social', profesion: 'Profesión',
-      nivelAcademico: 'Nivel académico', posgrado: 'Posgrado',
+      nivelAcademico: 'Nivel académico', posgrado: 'Posgrado', dptoVotacion: 'Depto votación', municVotacion: 'Munic. votación',
+      padrinoId: 'Padrino', rol: 'Rol', estado: 'Estado', gestiones: 'Gestiones',
     }
     const VAL_LABEL: Record<string, string> = { valido: 'Válido', invalido: 'Inválidos', fuera_municipio: 'Fuera de municipio', fuera_departamento: 'Fuera de departamento' }
     const chips: { key: keyof Filtros; label: string; value: string }[] = []
@@ -294,13 +325,15 @@ export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 
       if (k === 'q' || v === 'all' || v === '') return
       let val = v
       if (k === 'liderId') val = nombreLiderApi(v)
-      else if (k === 'puesto') val = PUESTOS.find((p) => p.id === v)?.nombre ?? v
-      else if (k === 'tieneVehiculo') val = v === 'si' ? 'Sí' : 'No'
+      else if (k === 'puesto') val = cat.puestos.find((p) => p.codigo === normPuesto(v))?.nombre ?? v
+      else if (k === 'padrinoId') val = opt.padrinos.find(([id]) => id === v)?.[1] ?? v
+      else if (k === 'rol') val = ROL_SIMPATIZANTE_LABEL[v as RolSimpatizante] ?? v
+      else if (k === 'tieneVehiculo' || k === 'gestiones') val = v === 'si' ? 'Sí' : 'No'
       else if (k === 'validez') val = VAL_LABEL[v] ?? v
       chips.push({ key: k as keyof Filtros, label: LABELS[k] ?? k, value: val })
     })
     return chips
-  }, [filtros, lideresApi])
+  }, [filtros, lideresApi, cat.puestos, opt.padrinos])
 
   return (
     <div>
@@ -361,190 +394,67 @@ export default function Directorio({ leaderMode = false, rolMode = leaderMode ? 
         </div>
       )}
 
-      {/* Panel de filtros */}
-      {showFiltros && (
-        <div className="bg-white rounded-xl border border-slate-200 p-4 mb-4 fade-in">
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
-            <div>
-              <label className="text-xs font-medium text-slate-600">Líder</label>
-              <select className={selCls} value={filtros.liderId} onChange={(e) => setLider(e.target.value)}>
-                <option value="all">Todos</option>
-                {lideresApi.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.nombres} {l.apellidos}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600">Departamento</label>
-              <select className={selCls} value={filtros.departamento} onChange={(e) => setDepartamento(e.target.value)}>
-                <option value="all">Todos</option>
-                {DEPARTAMENTOS.map((d) => (
-                  <option key={d}>{d}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600">Municipio</label>
-              <select className={selCls} value={filtros.municipio} onChange={(e) => setMunicipio(e.target.value)}>
-                <option value="all">Todos</option>
-                {muns.map((m) => (
-                  <option key={m}>{m}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600">Zona</label>
-              <select className={selCls} value={filtros.zona} onChange={(e) => setZona(e.target.value)}>
-                <option value="all">Todas</option>
-                <option value="Urbana">Urbana</option>
-                <option value="Rural">Rural</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600">Comuna</label>
-              <select className={selCls} value={filtros.comuna} onChange={(e) => setComuna(e.target.value)}>
-                <option value="all">Todas</option>
-                {comunas.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600">Corregimiento</label>
-              <select className={selCls} value={filtros.corregimiento} onChange={(e) => setCorregimiento(e.target.value)}>
-                <option value="all">Todos</option>
-                {corregimientos.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600">Barrio</label>
-              <select className={selCls} value={filtros.barrio} onChange={(e) => setBarrio(e.target.value)}>
-                <option value="all">Todos</option>
-                {barrios.map((b) => (
-                  <option key={b}>{b}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600">Puesto de votación</label>
-              <select className={selCls} value={filtros.puesto} onChange={(e) => patch({ puesto: e.target.value })}>
-                <option value="all">Todos</option>
-                {puestos.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.id} · {p.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600">Mesa</label>
-              <input
-                type="number"
-                value={filtros.mesa === 'all' ? '' : filtros.mesa}
-                onChange={(e) => patch({ mesa: e.target.value === '' ? 'all' : e.target.value })}
-                placeholder="Ej: 101"
-                className={selCls}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600">Nivel de voto</label>
-              <select className={selCls} value={filtros.nivelVoto} onChange={(e) => patch({ nivelVoto: e.target.value })}>
-                <option value="all">Todos</option>
-                <option>Firme</option>
-                <option>Indeciso</option>
-                <option>En Riesgo</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600">Validez</label>
-              <select className={selCls} value={filtros.validez} onChange={(e) => patch({ validez: e.target.value })}>
-                <option value="all">Toda</option>
-                <option value="valido">✅ Válido (Valledupar)</option>
-                <option value="invalido">⚠️ Inválidos (fuera del electorado)</option>
-                <option value="fuera_municipio">🟠 Fuera de municipio</option>
-                <option value="fuera_departamento">🔴 Fuera de departamento</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600">¿Tiene vehículo?</label>
-              <select className={selCls} value={filtros.tieneVehiculo} onChange={(e) => patch({ tieneVehiculo: e.target.value })}>
-                <option value="all">Todos</option>
-                <option value="si">Sí</option>
-                <option value="no">No</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600">Tipo de vehículo</label>
-              <select className={selCls} value={filtros.tipoVehiculo} onChange={(e) => patch({ tipoVehiculo: e.target.value })}>
-                <option value="all">Todos</option>
-                <option>Moto</option>
-                <option>Automóvil</option>
-                <option>Camioneta</option>
-                <option>Bus</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600">Rol Día E</label>
-              <select className={selCls} value={filtros.rolDiaE} onChange={(e) => patch({ rolDiaE: e.target.value })}>
-                <option value="all">Todos</option>
-                <option>Votante</option>
-                <option>Conductor</option>
-                <option>Testigo electoral</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600">Interés</label>
-              <select className={selCls} value={filtros.interes} onChange={(e) => patch({ interes: e.target.value })}>
-                <option value="all">Todos</option>
-                {INTERESES.map((i) => (
-                  <option key={i}>{i}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600">Grupo social</label>
-              <select className={selCls} value={filtros.grupoSocial} onChange={(e) => patch({ grupoSocial: e.target.value })}>
-                <option value="all">Todos</option>
-                {GRUPOS_SOCIALES.map((g) => (
-                  <option key={g}>{g}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600">Profesión</label>
-              <select className={selCls} value={filtros.profesion} onChange={(e) => patch({ profesion: e.target.value })}>
-                <option value="all">Todas</option>
-                <option value="Sin profesión">Sin profesión</option>
-                {PROFESIONES.map((p) => (
-                  <option key={p}>{p}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600">Nivel académico</label>
-              <select className={selCls} value={filtros.nivelAcademico} onChange={(e) => patch({ nivelAcademico: e.target.value })}>
-                <option value="all">Todos</option>
-                {NIVELES_ACADEMICOS.map((n) => (
-                  <option key={n}>{n}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-600">Posgrado</label>
-              <select className={selCls} value={filtros.posgrado} onChange={(e) => patch({ posgrado: e.target.value })}>
-                <option value="all">Todos</option>
-                {POSGRADOS.map((p) => (
-                  <option key={p}>{p}</option>
-                ))}
-              </select>
+      {/* Panel de filtros: Residencia, Puesto de Votación y Estructura y Caracterización */}
+      {showFiltros && (() => {
+        const sel = (label: string, k: keyof Filtros, opciones: [string, string][], todos = 'Todos', onChange?: (v: string) => void) => (
+          <div>
+            <label htmlFor={`f-${k}`} className="mb-1 block text-xs font-medium text-gray-500">{label}</label>
+            <select id={`f-${k}`} className={selCls} value={filtros[k]} onChange={(e) => (onChange ?? ((v: string) => patch({ [k]: v } as Partial<Filtros>)))(e.target.value)}>
+              <option value="all">{todos}</option>
+              {opciones.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </div>
+        )
+        const same = (xs: readonly string[]) => xs.map((x) => [x, x] as [string, string])
+        const grupo = (titulo: string, tono: string, hijos: ReactNode) => (
+          <div className="overflow-hidden rounded-lg border border-gray-200">
+            <p className={`border-b px-3 py-1.5 text-xs font-semibold uppercase tracking-wide ${tono}`}>{titulo}</p>
+            <div className="grid grid-cols-2 gap-3 p-3 md:grid-cols-4">{hijos}</div>
+          </div>
+        )
+        return (
+          <div className="mb-4 space-y-3 rounded-xl border border-gray-200 bg-white p-4 fade-in">
+            <p className="text-xs text-gray-400">Los filtros de <span className="font-medium text-blue-600">Residencia</span> usan la ubicación donde vive el simpatizante; los de <span className="font-medium text-emerald-600">Puesto de Votación</span> usan dónde está inscrito para votar — pueden no coincidir.</p>
+            {grupo('Residencia', 'bg-blue-50 text-blue-700 border-blue-100', <>
+              {sel('Departamento (residencia)', 'departamento', same(opt.departamentos), 'Todos', setDepartamento)}
+              {sel('Municipio (residencia)', 'municipio', same(opt.municipios), 'Todos', setMunicipio)}
+              {sel('Zona', 'zona', same(['Urbana', 'Rural']), 'Todas', setZona)}
+              {sel('Comuna', 'comuna', same(opt.comunas), 'Todas', setComuna)}
+              {sel('Corregimiento', 'corregimiento', same(opt.corregimientos), 'Todos', setCorregimiento)}
+              {sel('Barrio', 'barrio', same(opt.barrios), 'Todos', setBarrio)}
+            </>)}
+            {grupo('Puesto de Votación', 'bg-emerald-50 text-emerald-700 border-emerald-100', <>
+              {sel('Departamento (votación)', 'dptoVotacion', same(opt.dptosVotacion), 'Todos', (v) => patch({ dptoVotacion: v, municVotacion: 'all', puesto: 'all' }))}
+              {sel('Municipio (votación)', 'municVotacion', same(opt.municsVotacion), 'Todos', (v) => patch({ municVotacion: v, puesto: 'all' }))}
+              {sel('Puesto de votación', 'puesto', opt.puestos.map((x) => [x.codigo, `${x.nombre} (${x.municipio})`] as [string, string]))}
+              <div>
+                <label htmlFor="f-mesa" className="mb-1 block text-xs font-medium text-gray-500">Mesa</label>
+                <input id="f-mesa" inputMode="numeric" placeholder="Ej: 101" className={selCls} value={filtros.mesa === 'all' ? '' : filtros.mesa} onChange={(e) => patch({ mesa: e.target.value.replace(/\D/g, '') || 'all' })} />
+              </div>
+            </>)}
+            {grupo('Estructura y Caracterización', 'bg-amber-50 text-amber-700 border-amber-100', <>
+              {sel('Padrino', 'padrinoId', opt.padrinos, 'Todos', (v) => patch({ padrinoId: v, liderId: 'all' }))}
+              {sel('Líder', 'liderId', opt.lideres.map((l) => [l.id, `${l.nombres} ${l.apellidos}`] as [string, string]), 'Todos', setLider)}
+              {sel('Rol', 'rol', (Object.keys(ROL_SIMPATIZANTE_LABEL) as RolSimpatizante[]).map((r) => [r, ROL_SIMPATIZANTE_LABEL[r]] as [string, string]))}
+              {sel('Validez', 'validez', [['valido', 'Válido'], ['invalido', 'Inválido']], 'Toda')}
+              {sel('Estado en campaña', 'estado', same(['Activo', 'Inactivo', 'Retirado', 'Fallecido']))}
+              {sel('Nivel de voto', 'nivelVoto', same(['Firme', 'Indeciso']))}
+              {sel('¿Vehículo disponible para campaña?', 'tieneVehiculo', [['si', 'Sí'], ['no', 'No']])}
+              {sel('Tipo de vehículo', 'tipoVehiculo', same(['Moto', 'Carro', 'Bus/Buseta']))}
+              {sel('Rol Día E', 'rolDiaE', same(['Votante', 'Conductor', 'Testigo electoral']))}
+              {sel('¿Tiene gestiones?', 'gestiones', [['si', 'Sí'], ['no', 'No']])}
+              {sel('Interés', 'interes', same(INTERESES))}
+              {sel('Grupo social', 'grupoSocial', same(GRUPOS_SOCIALES))}
+              {sel('Profesión', 'profesion', same(['Sin profesión', ...PROFESIONES.filter((x) => x !== 'Sin estudios')]), 'Todas')}
+              {sel('Nivel académico', 'nivelAcademico', same(NIVELES_ACADEMICOS))}
+              {sel('Posgrado', 'posgrado', same(['Especialización', 'Maestría', 'Doctorado']))}
+            </>)}
+            <div className="flex justify-end border-t border-gray-100 pt-3">
+              <button type="button" onClick={limpiar} className="text-xs font-medium text-blue-600 hover:underline">Limpiar filtros</button>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Tabla con agrupación de columnas: Residencia, Puesto de Votación y Día E */}
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">

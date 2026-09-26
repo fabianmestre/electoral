@@ -18,6 +18,7 @@ import { cambiarRolSimpatizanteAdmin } from './admin.js'
 import { cambiarAccesoAdmin, listarCredencialesAdmin, restablecerClaveAdmin } from './admin.js'
 import { enviarComunicacion, listarComunicaciones } from './comunicaciones.js'
 import { asignarLideresGestorAdmin, listarAsignacionesGestoresAdmin } from './admin.js'
+import { actualizarPuesto, crearPuesto, listarDivipola, listarPuestos } from './catalogos.js'
 import { validarCapturaPlanilla } from './digitacion-planillas.js'
 
 const port = Number(process.env.PORT || 3002)
@@ -623,6 +624,23 @@ const server = createServer(async (request, response) => {
       return send(status, data)
     }
 
+    if (pathname === '/api/catalogos/divipola' && request.method === 'GET') {
+      await requireUser(request)
+      return send(200, { items: await listarDivipola() })
+    }
+    if (pathname === '/api/puestos' && request.method === 'GET') {
+      await requireUser(request)
+      return send(200, { items: await listarPuestos() })
+    }
+    if (pathname === '/api/puestos' && request.method === 'POST') {
+      await requireAdmin(request)
+      return send(201, await crearPuesto(await body(request)))
+    }
+    const puestoMatch = pathname.match(/^\/api\/puestos\/([A-Za-z0-9-]{2,20})$/)
+    if (puestoMatch && request.method === 'PATCH') {
+      await requireAdmin(request)
+      return send(200, await actualizarPuesto(puestoMatch[1].toUpperCase(), await body(request)))
+    }
     if (pathname === '/api/gestores/asignaciones' && request.method === 'GET') {
       await requireAdmin(request)
       return send(200, { items: await listarAsignacionesGestoresAdmin() })

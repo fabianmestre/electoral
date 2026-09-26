@@ -53,6 +53,7 @@ export type ViewId =
   | 'lider-registrar'
   | 'lider-registros'
   | 'gestor-asignaciones'
+  | 'puestos'
   | 'simpatizante-detalle'
   | 'gestion-lideres'
   | 'lider-directorio'
@@ -912,6 +913,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       nivelVoto: datos.nivelVoto,
       rolDiaE: datos.rolDiaE,
       habeasData: datos.habeasData,
+      estado: datos.estado ?? 'Activo',
+      departamentoVotacion: datos.departamentoVotacion ?? null,
+      municipioVotacion: datos.municipioVotacion ?? null,
       vehiculos: datos.vehiculos.map((v) => ({
         tipo: v.tipo, capacidadPasajeros: v.capacidadPasajeros, aDisposicion: v.aDisposicion, estado: v.estado,
       })),
